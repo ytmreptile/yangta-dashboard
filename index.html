@@ -955,9 +955,10 @@ function exportIndividualPDF(id){
   }
 
   // Photo gallery
-  const photosHtml=photos.length>0?`<div class="pp-photos" style="display:grid;grid-template-columns:repeat(${Math.min(photos.length,3)},1fr);gap:10px;margin:16px 0 20px">
-    ${photos.slice(0,3).map(p=>`<div style="border-radius:10px;overflow:hidden;aspect-ratio:1;background:#f0ebe1;border:1px solid #e8e3db;break-inside:avoid;page-break-inside:avoid"><img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;max-height:180px"></div>`).join('')}
-  </div>`:'<div style="text-align:center;padding:20px;color:#bbb;font-size:13px;border:1px dashed #e0d9ce;border-radius:10px;margin:16px 0 20px">尚無個體照片</div>';
+  const _photoSz=photos.length===1?220:photos.length===2?190:160;
+  const photosHtml=photos.length>0?`<div class="pp-photos" style="display:flex;gap:10px;margin:16px 0 20px;flex-wrap:nowrap">
+    ${photos.slice(0,3).map(p=>`<div style="flex:0 0 ${_photoSz}px;width:${_photoSz}px;height:${_photoSz}px;border-radius:10px;overflow:hidden;background:#f0ebe1;border:1px solid #e8e3db"><img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')}
+  </div>`:'';
 
   // Notes block
   const notesHtml=ind.notes?`<div style="margin-top:12px;padding:10px 14px;background:#faf8f4;border-left:3px solid #c9953a;border-radius:0 8px 8px 0;font-size:13px;color:#333">
