@@ -1095,12 +1095,20 @@ function applyPhotoUpdate(input){
   };
   reader.readAsDataURL(input.files[0]);
 }
+let _photoRemoveKey=null,_photoRemoveTimer=null;
 function removeIndividualPhoto(id,index){
-  const ind=getIndividual(id);
-  if(!ind||!ind.photos) return;
-  if(!confirm('確定移除此張照片？')) return;
-  ind.photos.splice(index,1);
-  saveData(); renderRegistry(); showIndividual(id); toast('照片已移除');
+  const key=id+':'+index;
+  if(_photoRemoveKey===key){
+    clearTimeout(_photoRemoveTimer); _photoRemoveKey=null;
+    const ind=getIndividual(id);
+    if(!ind||!ind.photos) return;
+    ind.photos.splice(index,1);
+    saveData(); renderRegistry(); showIndividual(id); toast('照片已移除');
+  } else {
+    _photoRemoveKey=key;
+    toast('⚠️ 再按一次確認移除照片');
+    _photoRemoveTimer=setTimeout(()=>{_photoRemoveKey=null;},3000);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1141,21 +1149,20 @@ function removeFormPhoto(index){
 // ═══════════════════════════════════════════
 //  DELETE INDIVIDUAL
 // ═══════════════════════════════════════════
+let _delConfirmId=null,_delConfirmTimer=null;
 function deleteIndividual(id){
-  const ind=getIndividual(id);
-  if(!ind) return;
-  const logCount=DATA.weightLogs.filter(l=>l.individualId===id).length;
-  const confirmMsg=logCount>0
-    ? `確定刪除個體「${id}」？\n同時會刪除該個體的 ${logCount} 筆體重記錄，此操作無法復原。`
-    : `確定刪除個體「${id}」？此操作無法復原。`;
-  if(!confirm(confirmMsg)) return;
-  DATA.individuals=DATA.individuals.filter(i=>i.id!==id);
-  DATA.weightLogs=DATA.weightLogs.filter(l=>l.individualId!==id);
-  saveData();
-  closeModal('modalIndividual');
-  renderRegistry();
-  updateHeaderStats();
-  toast(`已刪除 ${id}`);
+  if(_delConfirmId===id){
+    clearTimeout(_delConfirmTimer); _delConfirmId=null;
+    DATA.individuals=DATA.individuals.filter(i=>i.id!==id);
+    DATA.weightLogs=DATA.weightLogs.filter(l=>l.individualId!==id);
+    saveData(); closeModal('modalIndividual'); renderRegistry(); updateHeaderStats();
+    toast('已刪除 '+id);
+  } else {
+    _delConfirmId=id;
+    const logCount=DATA.weightLogs.filter(l=>l.individualId===id).length;
+    toast(`⚠️ 再按一次確認刪除「${id}」${logCount>0?' (含'+logCount+'筆記錄)':''}`);
+    _delConfirmTimer=setTimeout(()=>{_delConfirmId=null;},3000);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1239,8 +1246,10 @@ function handleIndividualSave(){
 }
 
 function saveNewIndividual(){
+  document.title='[DBG]1:start';
   const idEl=document.getElementById('newId');
   const id=(idEl.dataset.val!==undefined&&idEl.dataset.val!==''?idEl.dataset.val:idEl.value).trim();
+  document.title='[DBG]2:id='+id;
   if(!id){ toast('請輸入個體編號'); return; }
   if(DATA.individuals.find(i=>i.id===id)){ toast('個體編號已存在'); return; }
   const w=parseFloat(document.getElementById('newWeight').value)||0;
@@ -1261,8 +1270,16 @@ function saveNewIndividual(){
   if(w>0){
     DATA.weightLogs.push({id:`WL-${Date.now()}`,individualId:id,date:new Date().toISOString().split('T')[0],weight:w,appetite:'good',food:[],supplements:[],notes:'初始體重記錄'});
   }
-  saveData(); closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
+  document.title='[DBG]3:saveData';
+  saveData();
+  document.title='[DBG]4:closeModal';
+  closeModal('modalAddInd');
+  document.title='[DBG]5:renderRegistry';
+  renderRegistry();
+  document.title='[DBG]6:updateHeaderStats';
+  updateHeaderStats();
   toast(`✅ ${id} 已新增`);
+  document.title='陽台人｜飼養繁殖管理儀表板';
 }
 
 function saveEditIndividual(){
