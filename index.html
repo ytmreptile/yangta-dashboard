@@ -75,8 +75,8 @@ button:active{opacity:.75}
 .data-table tr:hover td{background:rgba(255,255,255,.02)}
 .data-table tr{cursor:pointer}
 /* ── MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
-.overlay.open{display:flex}
+.overlay{display:flex;visibility:hidden;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;transition:visibility 0s}
+.overlay.open{visibility:visible;pointer-events:auto}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;margin:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
 .modal-hdr h3{font-size:17px;font-weight:700}
