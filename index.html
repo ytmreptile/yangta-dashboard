@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陽台人｜飼養繁殖管理儀表板</title>
+<style>
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--surface3:#2a2d40;
+  --accent:#c9953a;--accent2:#e8b864;--accent3:#8b6914;
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;
+  --text:#e2e8f0;--muted:#8892a4;--border:#2d3148;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;font-size:14px;line-height:1.6}
+button{cursor:pointer;font-family:inherit}
+
+/* ── HEADER ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:center;gap:16px;padding:12px 0 8px}
+.brand{font-size:18px;font-weight:800;color:var(--accent2)}
+.brand small{font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+.hdr-stats{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
+.stat-pill{display:flex;flex-direction:column;align-items:flex-end}
+.stat-pill .val{font-size:17px;font-weight:700;color:var(--accent2);line-height:1.2}
+.stat-pill .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+/* ── TABS ── */
+.tab-bar{display:flex;gap:0;border-bottom:none;padding:0}
+.tab-btn{background:none;border:none;color:var(--muted);padding:10px 18px;font-size:13px;font-weight:600;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.tab-btn:hover{color:var(--text)}
+/* ── LAYOUT ── */
+.page{display:none;padding:20px;max-width:1280px;margin:0 auto}
+.page.active{display:block}
+/* ── TOOLBAR ── */
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;outline:none}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--accent)}
+.btn{background:var(--accent3);color:var(--accent2);border:1px solid var(--accent);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;transition:all .2s}
+.btn:hover{background:var(--accent);color:#fff}
+.btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
+.btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.btn-green{background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.4)}
+.btn-green:hover{background:rgba(34,197,94,.3)}
+.toggle-group{display:flex;background:var(--surface2);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.toggle-btn{background:none;border:none;color:var(--muted);padding:6px 14px;font-size:12px;font-weight:600}
+.toggle-btn.active{background:var(--accent);color:#fff}
+/* ── CARDS ── */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ind-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s}
+.ind-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card-img{height:110px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
+.card-body{padding:10px 12px}
+.card-id{font-size:12px;font-weight:700;color:var(--accent2)}
+.card-weight{font-size:20px;font-weight:800;color:var(--text)}
+.card-weight small{font-size:11px;color:var(--muted);font-weight:400}
+.progress-wrap{margin:6px 0 4px;background:var(--surface3);border-radius:4px;height:5px;overflow:hidden;position:relative}
+.progress-bar{height:100%;border-radius:4px;transition:width .4s}
+.progress-marks{position:relative;height:8px;margin-bottom:2px}
+.progress-marks::before{content:'50g';position:absolute;font-size:9px;color:var(--yellow);left:71.4%}
+.progress-marks::after{content:'60g';position:absolute;font-size:9px;color:var(--green);right:0}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--blue)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+/* ── TABLE VIEW ── */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--surface2);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.data-table tr{cursor:pointer}
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;margin:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-hdr h3{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;line-height:1}
+.modal-body{padding:20px}
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.form-group input,.form-group select,.form-group textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-row{display:flex;gap:10px;margin-top:14px;justify-content:flex-end}
+/* ── WEIGHT CHART ── */
+.chart-wrap{background:var(--surface2);border-radius:10px;padding:14px;margin:12px 0}
+.chart-svg{width:100%;overflow:visible}
+/* ── LOG TABLE ── */
+.log-row{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;font-size:13px}
+.log-row:last-child{border-bottom:none}
+.log-date{color:var(--muted);font-size:12px;min-width:80px}
+.log-weight-val{font-size:17px;font-weight:700;color:var(--accent2);min-width:50px}
+.log-delta{font-size:11px;font-weight:600;min-width:40px}
+/* ── KANBAN ── */
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.kanban-col{background:var(--surface2);border-radius:12px;padding:12px}
+.kanban-col-hdr{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.kanban-col-hdr .cnt{background:var(--surface3);color:var(--muted);border-radius:12px;padding:1px 8px;font-size:11px}
+.egg-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.egg-card:hover{border-color:var(--accent)}
+.egg-id{font-size:12px;font-weight:700;color:var(--accent2)}
+.egg-info{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.6}
+.kanban-placeholder{background:var(--surface3);border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;color:var(--muted);font-size:12px;margin-bottom:8px}
+/* ── BUSINESS TAB ── */
+.goal-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.goal-card h4{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.weight-ladder{display:flex;flex-direction:column;gap:8px}
+.ladder-row{display:flex;align-items:center;gap:10px}
+.ladder-id{font-size:12px;font-weight:700;color:var(--muted);width:70px;flex-shrink:0}
+.ladder-bar-wrap{flex:1;background:var(--surface3);border-radius:4px;height:14px;overflow:hidden;position:relative}
+.ladder-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);transition:width .5s}
+.ladder-line{position:absolute;top:0;bottom:0;width:2px}
+.ladder-line-50{background:rgba(245,158,11,.6);left:71.4%}
+.ladder-line-60{background:rgba(34,197,94,.6);right:0}
+.ladder-weight{font-size:12px;font-weight:600;color:var(--text);width:40px;text-align:right}
+.ladder-eta{font-size:11px;color:var(--muted);width:60px;text-align:right}
+/* ── SCENARIO CARDS ── */
+.scenario-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.scenario-card{background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid transparent}
+.scenario-card.a{border-top-color:var(--green)}
+.scenario-card.b{border-top-color:var(--blue)}
+.scenario-card.c{border-top-color:var(--yellow)}
+.scenario-card .s-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.scenario-card .s-title{font-size:13px;font-weight:700;margin-bottom:8px}
+.scenario-card .s-val{font-size:20px;font-weight:800}
+.scenario-card .s-sub{font-size:11px;color:var(--muted);margin-top:2px}
+/* ── SECTION ── */
+.section-hdr{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+/* ── DETAIL PANEL ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.detail-item{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.detail-lbl{font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px}
+.detail-val{font-size:14px;font-weight:600}
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .gallery{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .kanban{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .scenario-grid{grid-template-columns:1fr}
+  .hdr-stats{gap:12px}
+  .stat-pill .val{font-size:14px}
+}
+@media(max-width:480px){
+  .kanban{grid-template-columns:1fr}
+  .hdr-stats{display:none}
+}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--green);color:var(--green);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+/* ── CHIPS ── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;transition:all .2s}
+.chip.selected{background:rgba(201,149,58,.2);border-color:var(--accent);color:var(--accent2)}
+/* ── LOG LAYOUT ── */
+.log-layout{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+.log-form-sticky{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:sticky;top:80px}
+/* ── MOBILE 768 ── */
+@media(max-width:768px){
+  .log-layout{grid-template-columns:1fr}
+  .log-form-sticky{position:static}
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .page{padding:14px}
+  .modal{max-width:100%}
+  .scenario-grid{grid-template-columns:1fr 1fr}
+}
+/* ── MOBILE 480 ── */
+@media(max-width:480px){
+  .page{padding:10px}
+  .scenario-grid{grid-template-columns:1fr}
+  .kanban{grid-template-columns:1fr}
+  .modal-body{padding:14px}
+  .detail-grid{grid-template-columns:1fr}
+  #photoSlotsContainer{grid-template-columns:repeat(3,1fr)!important}
+  .photo-grid-5{grid-template-columns:repeat(3,1fr)!important}
+  .hdr-top{gap:10px}
+}
+/* ── TOUCH TARGETS ── */
+@media(hover:none) and (pointer:coarse){
+  .btn{min-height:44px}
+  .btn-sm{min-height:38px;padding:8px 14px;font-size:13px}
+  .tab-btn{min-height:44px;padding:12px 16px}
+  .chip{padding:8px 14px;font-size:12px}
+  .toggle-btn{min-height:38px;padding:8px 16px}
+  .modal-close{width:40px;height:40px;font-size:24px;display:flex;align-items:center;justify-content:center}
+  .toolbar input,.toolbar select{min-height:40px;font-size:14px}
+  .form-group input,.form-group select,.form-group textarea{min-height:40px;font-size:14px}
+}
+/* ── EGG STAGE BUTTONS ── */
+.egg-stages{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.egg-stage-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;line-height:1.4;white-space:nowrap}
+.egg-stage-btn:hover,.egg-stage-btn:active{border-color:var(--accent);color:var(--accent2);background:rgba(201,149,58,.12)}
+/* ── PRINT ── */
+#printArea{display:none}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  @page{size:A4 portrait;margin:12mm 15mm}
+}
+/* ── PHOTO ── */
+.photo-zone{border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s;color:var(--muted);font-size:13px}
+.photo-zone:hover,.photo-zone.drag-over{border-color:var(--accent);color:var(--accent2)}
+.photo-zone img{max-height:130px;max-width:100%;border-radius:6px;object-fit:cover;display:block;margin:0 auto}
+.card-cover{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.card-no-photo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface3);color:var(--muted);font-size:11px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板</small></div>
+    <div class="hdr-stats" id="headerStats"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('registry')">個體履歷</button>
+    <button class="tab-btn" onclick="switchTab('logs')">📊 培育日誌</button>
+    <button class="tab-btn" onclick="switchTab('hatch')">🥚 孵化看板</button>
+    <button class="tab-btn" onclick="switchTab('business')">📈 商業目標</button>
+  </div>
+</div>
+
+<!-- TAB 1: 個體履歷 -->
+<div id="page-registry" class="page active">
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="搜尋個體編號..." oninput="renderRegistry()" style="width:180px">
+    <select id="filterSpecies" onchange="renderRegistry()">
+      <option value="">全部物種</option>
+      <option value="amyae">棘皮瘤尾守宮</option>
+      <option value="turtle">星點澤龜</option>
+    </select>
+    <select id="filterSex" onchange="renderRegistry()">
+      <option value="">全部性別</option>
+      <option value="F">母 ♀</option>
+      <option value="M">公 ♂</option>
+      <option value="U">未顯 ⚲</option>
+    </select>
+    <select id="filterStatus" onchange="renderRegistry()">
+      <option value="">全部狀態</option>
+      <option value="growing">增重中</option>
+      <option value="ready">可繁殖</option>
+      <option value="cooling">冬化中</option>
+      <option value="pairing">配對中</option>
+      <option value="gravid">懷卵中</option>
+      <option value="sale">待售</option>
+    </select>
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="viewGallery" onclick="setView('gallery')">▦ 畫廊</button>
+      <button class="toggle-btn" id="viewTable" onclick="setView('table')">☰ 列表</button>
+    </div>
+    <button class="btn btn-sm" onclick="openAddIndividual()">＋ 新增個體</button>
+    <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="registryCount"></span>
+  </div>
+  <div id="registryContent"></div>
+</div>
+
+<!-- TAB 2: 培育日誌 -->
+<div id="page-logs" class="page">
+  <div class="log-layout">
+    <!-- Left: Add form -->
+    <div class="log-form-sticky">
+      <div class="section-hdr">新增體重記錄</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>選擇個體</label>
+        <select id="logIndividual" onchange="onLogIndividualChange()">
+          <option value="">— 選擇個體 —</option>
+        </select>
+      </div>
+      <div id="currentWeightBadge" style="margin-bottom:10px;display:none">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--muted)">最新體重</span>
+          <span id="cwValue" style="font-size:20px;font-weight:800;color:var(--accent2)">—</span>
+        </div>
+      </div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <label>記錄日期</label>
+          <input type="date" id="logDate">
+        </div>
+        <div class="form-group">
+          <label>體重（g）</label>
+          <input type="number" id="logWeight" step="0.1" min="0" max="200" placeholder="e.g. 46">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>進食狀況</label>
+        <select id="logAppetite">
+          <option value="excellent">優（主動爆食）</option>
+          <option value="good" selected>良（正常進食）</option>
+          <option value="poor">差（少量進食）</option>
+          <option value="refused">拒食</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>主食內容（點選複數）</label>
+        <div class="chips" id="foodChips">
+          <div class="chip selected" data-val="杜比亞">杜比亞</div>
+          <div class="chip" data-val="蟋蟀">蟋蟀</div>
+          <div class="chip" data-val="麥皮蟲">麥皮蟲</div>
+          <div class="chip" data-val="黑水虻">黑水虻</div>
+          <div class="chip" data-val="Repashy">Repashy</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>補充劑</label>
+        <div class="chips" id="suppChips">
+          <div class="chip selected" data-val="Calcium+D3">Calcium+D3</div>
+          <div class="chip" data-val="純鈣">純鈣</div>
+          <div class="chip" data-val="綜合維他命">綜合維他命</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>備註</label>
+        <textarea id="logNotes" placeholder="蛻皮狀況、異常行為..."></textarea>
+      </div>
+      <button class="btn" style="width:100%" onclick="saveLog()">儲存記錄</button>
+    </div>
+    <!-- Right: Log list -->
+    <div>
+      <div class="toolbar" style="margin-bottom:12px">
+        <select id="logFilterIndividual" onchange="renderLogs()" style="width:180px">
+          <option value="">全部個體</option>
+        </select>
+        <select id="logFilterSpecies" onchange="renderLogs()">
+          <option value="">全部物種</option>
+          <option value="amyae">棘皮瘤尾守宮</option>
+          <option value="turtle">星點澤龜</option>
+        </select>
+        <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="logCount"></span>
+      </div>
+      <div id="logContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: 孵化看板 -->
+<div id="page-hatch" class="page">
+  <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.3);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+    <div style="font-size:24px">📅</div>
+    <div>
+      <div style="font-weight:700;color:var(--blue)">配對計畫：2027年3月（情境B）</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">孵化看板已就緒。待2027年3月首次配對、5月產卵後，即可點擊「＋新增蛋」正式啟動生產追蹤。</div>
+    </div>
+    <button class="btn btn-sm btn-ghost" style="margin-left:auto;flex-shrink:0" onclick="openAddEgg()">＋ 新增蛋（2027）</button>
+  </div>
+  <div class="kanban" id="kanbanBoard"></div>
+  <div style="margin-top:20px">
+    <div class="section-hdr">孵化參數速查</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">均衡性別比（推薦）</div>
+        <div style="font-size:28px;font-weight:800;color:var(--accent2)">27°C</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">孵化期：80–90 天<br>使用蛭石（1:1 重量比）</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">快速孵化</div>
+        <div style="font-size:28px;font-weight:800;color:var(--yellow)">29°C</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">孵化期：65–75 天<br>不建議超過 30.5°C</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">孵蛋介質（推薦）</div>
+        <div style="font-size:22px;font-weight:800;color:var(--green)">蛭石</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">水分比 1:1（重量）<br>或 HatchRite 商業介質</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: 商業目標 -->
+<div id="page-business" class="page">
+  <!-- Weight progress to target -->
+  <div class="goal-card">
+    <h4>⚖️ 母體增重進度（目標：60g 最佳繁殖體重）</h4>
+    <div style="display:flex;gap:20px;font-size:12px;color:var(--muted);margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--red);border-radius:2px;margin-right:4px"></span>未達標（&lt;50g）</span>
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--yellow);border-radius:2px;margin-right:4px"></span>邊緣（50–59g）</span>
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--green);border-radius:2px;margin-right:4px"></span>最佳（60g+）</span>
+      <span style="margin-left:auto">▏= 50g 最低門檻　　 ▏= 60g 理想目標</span>
+    </div>
+    <div class="weight-ladder" id="weightLadder"></div>
+  </div>
+
+  <!-- Scenario projections -->
+  <div class="goal-card">
+    <h4>💰 三情境財務預測</h4>
+    <div class="scenario-grid">
+      <div class="scenario-card a">
+        <div class="s-label" style="color:var(--green)">情境A｜2026年9月配對</div>
+        <div class="s-title">部分個體達標（如體重衝過50g）</div>
+        <div class="s-val" style="color:var(--green)" id="projA">—</div>
+        <div class="s-sub">預計年淨利（2027）</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：2027 Q2（4–6月）<br>規模：5–8 隻</div>
+      </div>
+      <div class="scenario-card b">
+        <div class="s-label" style="color:var(--blue)">情境B｜2027年3月配對</div>
+        <div class="s-title">標準週期（當前確認路線）</div>
+        <div class="s-val" style="color:var(--blue)" id="projB">—</div>
+        <div class="s-sub">預計年淨利（2027）</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：2027 Q4（11–12月）<br>規模：12–18 隻</div>
+      </div>
+      <div class="scenario-card c">
+        <div class="s-label" style="color:var(--yellow)">混合策略｜A+B 雙波</div>
+        <div class="s-title">最佳資金流管理</div>
+        <div class="s-val" style="color:var(--yellow)" id="projC">—</div>
+        <div class="s-sub">預計年淨利（2027）</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：Q2 + Q4 雙批<br>副業超主業目標：2027底</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline to income goal -->
+  <div class="goal-card">
+    <h4>🎯 副業超主業路徑（目標：月收入 NT$69,000 / 2028年6月前）</h4>
+    <div id="incomeTimeline" style="margin-top:4px"></div>
+  </div>
+
+  <!-- Key actions now -->
+  <div class="goal-card">
+    <h4>✅ 2026 下半年關鍵行動清單</h4>
+    <div id="actionList"></div>
+  </div>
+</div>
+
+<!-- MODAL: Individual detail -->
+<div class="overlay" id="modalIndividual" onclick="if(event.target===this)closeModal('modalIndividual')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modalIndTitle">個體詳情</h3>
+      <button class="modal-close" onclick="closeModal('modalIndividual')">✕</button>
+    </div>
+    <div class="modal-body" id="modalIndBody"></div>
+  </div>
+</div>
+
+<!-- MODAL: Add / Edit individual -->
+<div class="overlay" id="modalAddInd" onclick="if(event.target===this)closeModal('modalAddInd')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modalAddIndTitle">新增個體</h3>
+      <button class="modal-close" onclick="closeModal('modalAddInd')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label id="newIdLabel">個體編號</label>
+          <input type="text" id="newId" placeholder="AM-F17">
+        </div>
+        <div class="form-group">
+          <label>物種</label>
+          <select id="newSpecies">
+            <option value="amyae">棘皮瘤尾守宮</option>
+            <option value="turtle">星點澤龜</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="newSex">
+            <option value="F">母 ♀</option>
+            <option value="M">公 ♂</option>
+            <option value="U">未顯 ⚲</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>取得/出生日期</label>
+          <input type="month" id="newDate">
+        </div>
+        <div class="form-group">
+          <label id="newWeightLabel">當前體重（g）</label>
+          <input type="number" id="newWeight" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label>狀態</label>
+          <select id="newStatus">
+            <option value="growing">增重中</option>
+            <option value="ready">可繁殖</option>
+            <option value="cooling">冬化中</option>
+            <option value="sale">待售</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>來源</label>
+          <input type="text" id="newSource" placeholder="斯洛伐克進口(衡成)">
+        </div>
+        <div class="form-group">
+          <label>父體（公）</label>
+          <select id="newFatherId"></select>
+        </div>
+        <div class="form-group">
+          <label>母體（母）</label>
+          <select id="newMotherId"></select>
+        </div>
+        <div class="form-group">
+          <label>文件/進口號</label>
+          <input type="text" id="newDoc" placeholder="26SK000001">
+        </div>
+        <div class="form-group">
+          <label>世代</label>
+          <select id="newGeneration">
+            <option value="F0">F0（種源）</option>
+            <option value="F1">F1（第一子代）</option>
+            <option value="F2">F2（第二子代）</option>
+            <option value="F3">F3</option>
+            <option value="F4">F4</option>
+            <option value="F5">F5</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>品系/體色</label>
+          <input type="text" id="newColor" placeholder="Normal">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>備註</label>
+          <textarea id="newNotes"></textarea>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label id="formPhotoLabel">個體照片（最多5張）</label>
+          <div id="photoSlotsContainer" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:4px"></div>
+          <input type="file" id="newPhotoFile" accept="image/*" style="display:none" onchange="handleFormPhotoSelect(this)">
+        </div>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-ghost" onclick="closeModal('modalAddInd')">取消</button>
+        <button class="btn" id="modalAddIndSaveBtn" onclick="handleIndividualSave()">新增</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add egg -->
+<div class="overlay" id="modalAddEgg" onclick="if(event.target===this)closeModal('modalAddEgg')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>新增孵化記錄</h3>
+      <button class="modal-close" onclick="closeModal('modalAddEgg')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>蛋編號</label>
+          <input type="text" id="eggId" placeholder="2027-AM-F01-C1">
+        </div>
+        <div class="form-group">
+          <label>母體</label>
+          <select id="eggMother"></select>
+        </div>
+        <div class="form-group">
+          <label>父體</label>
+          <select id="eggFather"></select>
+        </div>
+        <div class="form-group">
+          <label>產蛋日期</label>
+          <input type="date" id="eggLayDate" onchange="calcHatch()">
+        </div>
+        <div class="form-group">
+          <label>孵化溫度</label>
+          <select id="eggTemp" onchange="calcHatch()">
+            <option value="27">27°C（80–90天，均衡）</option>
+            <option value="28">28°C（75–80天）</option>
+            <option value="29">29°C（65–75天）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>預計破殼日（自動計算）</label>
+          <input type="text" id="eggHatchDate" readonly style="color:var(--accent2);font-weight:700">
+        </div>
+        <div class="form-group">
+          <label>孵化箱</label>
+          <select id="eggIncubator">
+            <option value="A">孵化箱A-27°C</option>
+            <option value="B">孵化箱B-29°C</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>蛋重（g）</label>
+          <input type="number" id="eggWeight" step="0.1" min="0" placeholder="選填">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>外觀備註</label>
+          <textarea id="eggNotes" placeholder="外觀正常/輕微凹陷/蛋殼色澤..."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-ghost" onclick="closeModal('modalAddEgg')">取消</button>
+        <button class="btn" onclick="saveNewEgg()">新增蛋</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printArea"></div>
+<input type="file" id="photoUpdateFile" accept="image/*" style="display:none" onchange="applyPhotoUpdate(this)">
+
+<script>
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const STORAGE_KEY = 'yangta_data_v3';
+
+function defaultData(){
+  return {individuals:[], weightLogs:[], eggs:[]};
+}
+
+let DATA;
+function migrateData(data){
+  // migrate old single `photo` field → `photos` array
+  (data.individuals||[]).forEach(ind=>{
+    if(!ind.photos){
+      ind.photos = ind.photo ? [ind.photo] : [];
+      delete ind.photo;
+    }
+  });
+  return data;
+}
+function loadData(){
+  try{
+    const s=localStorage.getItem(STORAGE_KEY);
+    DATA = s? migrateData(JSON.parse(s)): defaultData();
+  }catch(e){ DATA=defaultData(); }
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA)); }
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+const statusLabel={growing:'增重中',ready:'可繁殖',cooling:'冬化中',pairing:'配對中',gravid:'懷卵中',sale:'待售'};
+const statusBadge={growing:'badge-blue',ready:'badge-green',cooling:'badge-purple',pairing:'badge-red',gravid:'badge-yellow',sale:'badge-purple'};
+const appetiteLabel={excellent:'優（爆食）',good:'良（正常）',poor:'差（少量）',refused:'拒食'};
+const speciesLabel={amyae:'棘皮瘤尾守宮',turtle:'星點澤龜'};
+const speciesEmoji={amyae:'',turtle:''};
+
+function latestWeight(id){
+  const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  return logs.length? logs[0].weight: null;
+}
+function getIndividual(id){ return DATA.individuals.find(i=>i.id===id); }
+function readinessColor(w,sex){
+  if(sex==='M') return w>=40?'var(--green)':w>=30?'var(--yellow)':'var(--red)';
+  return w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--red)';
+}
+function readinessBadge(w,sex){
+  if(sex==='M'){
+    if(w>=40) return{cls:'badge-green',txt:'就緒 ✅'};
+    if(w>=30) return{cls:'badge-yellow',txt:'邊緣 ⚠️'};
+    return{cls:'badge-red',txt:'未達標 ✗'};
+  }
+  if(w>=60) return{cls:'badge-green',txt:'最佳 ✅'};
+  if(w>=50) return{cls:'badge-yellow',txt:'邊緣 ⚠️'};
+  return{cls:'badge-red',txt:'未達標 ✗'};
+}
+function etaMonths(currentW,targetW,monthlyGain=2.5){
+  const diff=targetW-currentW;
+  if(diff<=0) return null;
+  return Math.ceil(diff/monthlyGain);
+}
+function addMonths(baseDate,months){
+  const d=new Date(baseDate);
+  d.setMonth(d.getMonth()+months);
+  return d.toLocaleDateString('zh-TW',{year:'numeric',month:'long'});
+}
+function formatDate(d){ return d? new Date(d).toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}):'—'; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+let currentView='gallery';
+function switchTab(tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(tab==='registry') renderRegistry();
+  if(tab==='logs'){renderLogs();populateLogSelects();}
+  if(tab==='hatch') renderKanban();
+  if(tab==='business') renderBusiness();
+}
+function setView(v){
+  currentView=v;
+  document.getElementById('viewGallery').classList.toggle('active',v==='gallery');
+  document.getElementById('viewTable').classList.toggle('active',v==='table');
+  renderRegistry();
+}
+
+// ═══════════════════════════════════════════
+//  REGISTRY
+// ═══════════════════════════════════════════
+function getFilteredIndividuals(){
+  const search=document.getElementById('searchInput').value.toLowerCase();
+  const species=document.getElementById('filterSpecies').value;
+  const sex=document.getElementById('filterSex').value;
+  const status=document.getElementById('filterStatus').value;
+  return DATA.individuals.filter(ind=>{
+    if(search && !ind.id.toLowerCase().includes(search)) return false;
+    if(species && ind.species!==species) return false;
+    if(sex && ind.sex!==sex) return false;
+    if(status && ind.status!==status) return false;
+    return true;
+  });
+}
+function renderRegistry(){
+  const list=getFilteredIndividuals();
+  document.getElementById('registryCount').textContent=`顯示 ${list.length} / ${DATA.individuals.length} 隻`;
+  if(currentView==='gallery') renderGallery(list);
+  else renderTable(list);
+}
+function renderGallery(list){
+  const el=document.getElementById('registryContent');
+  if(list.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px;opacity:.3;font-family:monospace;color:var(--accent);letter-spacing:-2px">[ ]</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">尚無個體資料</div>
+      <div style="font-size:13px">點擊上方「＋ 新增個體」開始建立你的個體履歷</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div class="gallery">${list.map(ind=>{
+    const w=latestWeight(ind.id)||ind.weight;
+    const maxW=ind.sex==='M'?55:70;
+    const pct=Math.min(100,Math.round(w/maxW*100));
+    const col=readinessColor(w,ind.sex);
+    const rb=readinessBadge(w,ind.sex);
+    return`<div class="ind-card" onclick="showIndividual('${ind.id}')">
+      <div class="card-img">
+        ${(ind.photos&&ind.photos[0])?`<img class="card-cover" src="${ind.photos[0]}">`:`<div class="card-no-photo">NO PHOTO</div>`}
+        <span style="position:absolute;top:6px;left:8px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:6px;backdrop-filter:blur(4px)">${ind.sex==='F'?'♀':ind.sex==='M'?'♂':'⚲'}</span>
+        <button onclick="event.stopPropagation();deleteIndividual('${ind.id}')" style="position:absolute;top:6px;right:8px;background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.5);color:#fff;border-radius:6px;width:22px;height:22px;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" title="刪除個體">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="card-id">${ind.id}</div>
+        <div class="card-weight">${w}<small> g</small></div>
+        <div class="progress-marks"></div>
+        <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${col}"></div>
+          <div style="position:absolute;top:0;bottom:0;left:71.4%;width:1px;background:rgba(245,158,11,.5)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span class="badge ${rb.cls}" style="font-size:10px">${rb.txt}</span>
+          <span class="badge ${statusBadge[ind.status]}" style="font-size:10px">${statusLabel[ind.status]}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function renderTable(list){
+  const el=document.getElementById('registryContent');
+  if(list.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px;opacity:.3;font-family:monospace;color:var(--accent);letter-spacing:-2px">[ ]</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">尚無個體資料</div>
+      <div style="font-size:13px">點擊上方「＋ 新增個體」開始建立你的個體履歷</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px">
+    <table class="data-table">
+      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>就緒狀態</th><th>現況</th><th>取得日</th><th>文件號</th><th></th></tr></thead>
+      <tbody>${list.map(ind=>{
+        const w=latestWeight(ind.id)||ind.weight;
+        const rb=readinessBadge(w,ind.sex);
+        return`<tr>
+          <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--accent2)">${ind.id}</strong></td>
+          <td onclick="showIndividual('${ind.id}')">${speciesLabel[ind.species]}</td>
+          <td onclick="showIndividual('${ind.id}')"><span style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</span></td>
+          <td onclick="showIndividual('${ind.id}')">${ind.sex==='F'?'♀ 母':ind.sex==='M'?'♂ 公':'⚲ 未顯'}</td>
+          <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--text)">${w}g</strong></td>
+          <td onclick="showIndividual('${ind.id}')"><span class="badge ${rb.cls}">${rb.txt}</span></td>
+          <td onclick="showIndividual('${ind.id}')"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></td>
+          <td onclick="showIndividual('${ind.id}')" style="color:var(--muted)">${ind.acquireDate||'—'}</td>
+          <td onclick="showIndividual('${ind.id}')" style="color:var(--muted);font-size:12px">${ind.docNo||'—'}</td>
+          <td><button onclick="deleteIndividual('${ind.id}')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:6px;padding:3px 10px;font-size:12px" title="刪除">刪除</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+function showIndividual(id){
+  const ind=getIndividual(id);
+  if(!ind) return;
+  const w=latestWeight(id)||ind.weight;
+  const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  const rb=readinessBadge(w,ind.sex);
+  const eta=ind.species==='amyae'&&ind.sex==='F'? etaMonths(w,60):null;
+
+  // Mini SVG chart
+  let chartHtml='';
+  if(logs.length>=2){
+    const ws=logs.map(l=>l.weight);
+    const minW=Math.min(...ws)-5, maxW=Math.max(...ws)+5;
+    const pts=logs.map((l,i)=>{
+      const x=20+i*(260/(logs.length-1));
+      const y=90-((l.weight-minW)/(maxW-minW))*70;
+      return`${x},${y}`;
+    });
+    chartHtml=`<div class="chart-wrap">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">體重趨勢</div>
+      <svg class="chart-svg" viewBox="0 0 280 110" style="height:90px">
+        <polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+        ${logs.map((l,i)=>{
+          const x=20+i*(260/(logs.length-1));
+          const y=90-((l.weight-minW)/(maxW-minW))*70;
+          return`<circle cx="${x}" cy="${y}" r="4" fill="var(--accent2)"/>
+          <text x="${x}" y="${y-8}" font-size="9" fill="var(--muted)" text-anchor="middle">${l.weight}g</text>`;
+        }).join('')}
+        ${ind.sex==='F'&&ind.species==='amyae'?`
+          <line x1="0" y1="${90-((50-minW)/(maxW-minW))*70}" x2="280" y2="${90-((50-minW)/(maxW-minW))*70}" stroke="rgba(245,158,11,.4)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="2" y="${90-((50-minW)/(maxW-minW))*70-3}" font-size="8" fill="var(--yellow)">50g</text>`:''}
+      </svg>
+    </div>`;
+  }
+
+  document.getElementById('modalIndTitle').textContent=`${ind.id} — ${speciesLabel[ind.species]}`;
+  const photos=ind.photos||[];
+  const photoSection=`<div style="margin-bottom:16px">
+    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">照片 ${photos.length} / 5</div>
+    <div class="photo-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+      ${[0,1,2,3,4].map(i=>{
+        if(photos[i]) return`<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--surface3)">
+          <img src="${photos[i]}" style="width:100%;height:100%;object-fit:cover">
+          <button onclick="removeIndividualPhoto('${id}',${i})" style="position:absolute;top:3px;right:3px;background:rgba(239,68,68,.85);border:none;color:#fff;border-radius:4px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button>
+        </div>`;
+        if(photos.length<5) return`<div onclick="triggerIndividualPhotoAdd('${id}')" style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:22px;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+</div>`;
+        return`<div style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;opacity:.2"></div>`;
+      }).join('')}
+    </div>
+  </div>`;
+  document.getElementById('modalIndBody').innerHTML=`${photoSection}
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-lbl">物種</div><div class="detail-val">${speciesLabel[ind.species]}</div></div>
+      <div class="detail-item"><div class="detail-lbl">性別</div><div class="detail-val">${ind.sex==='F'?'♀ 母':ind.sex==='M'?'♂ 公':'⚲ 未顯'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">當前體重</div><div class="detail-val" style="color:var(--accent2)">${w} g</div></div>
+      <div class="detail-item"><div class="detail-lbl">繁殖就緒</div><div class="detail-val"><span class="badge ${rb.cls}">${rb.txt}</span></div></div>
+      <div class="detail-item"><div class="detail-lbl">取得日期</div><div class="detail-val">${ind.acquireDate||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">現況</div><div class="detail-val"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">來源</div><div class="detail-val" style="font-size:13px">${ind.source||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">世代</div><div class="detail-val" style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">品系/體色</div><div class="detail-val">${ind.color||'Normal'}</div></div>
+      ${(()=>{const fa=ind.fatherId?getIndividual(ind.fatherId):null;const mo=ind.motherId?getIndividual(ind.motherId):null;if(!fa&&!mo)return'';return`<div class="detail-item" style="grid-column:1/-1;display:flex;gap:12px;padding:10px 12px;background:rgba(201,149,58,.06);border:1px solid rgba(201,149,58,.2);border-radius:8px">
+        ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
+        ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
+      </div>`})()}
+      ${eta?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距60g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${eta} 個月（${addMonths('2026-06-20',eta)}）</div></div>`:''}
+    </div>
+    ${chartHtml}
+    <div class="section-hdr" style="margin-top:12px">最近記錄</div>
+    <div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-top:8px">
+      ${logs.length===0?'<div style="padding:14px;color:var(--muted);font-size:13px">尚無記錄，請在培育日誌頁新增。</div>':
+        logs.slice(-5).reverse().map((l,i)=>{
+          const prev=logs[logs.length-5+logs.slice(-5).length-1-i-1];
+          const delta=prev? +(l.weight-prev.weight).toFixed(1):null;
+          const deltaHtml=delta===null?'':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
+          return`<div class="log-row">
+            <span class="log-date">${formatDate(l.date)}</span>
+            <span class="log-weight-val">${l.weight}g</span>
+            <span class="log-delta">${deltaHtml}</span>
+            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
+          </div>`;
+        }).join('')}
+    </div>
+    <div class="form-row" style="margin-top:12px">
+      <button class="btn btn-sm" style="background:rgba(239,68,68,.15);color:var(--red);border-color:rgba(239,68,68,.4);margin-right:auto" onclick="closeModal('modalIndividual');deleteIndividual('${id}')">刪除個體</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalIndividual');switchTabDirect('logs','${id}')">前往培育日誌</button>
+      <button class="btn btn-sm" style="background:rgba(201,149,58,.18);color:var(--accent2);border-color:var(--accent3)" onclick="exportIndividualPDF('${id}')">匯出 PDF</button>
+      <button class="btn btn-sm" onclick="closeModal('modalIndividual');openEditIndividual('${id}')">編輯個體資料</button>
+    </div>`;
+  document.getElementById('modalIndividual').classList.add('open');
+}
+function switchTabDirect(tab,preselect){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  populateLogSelects();
+  if(preselect) document.getElementById('logIndividual').value=preselect;
+  onLogIndividualChange();
+  renderLogs();
+}
+
+// ═══════════════════════════════════════════
+//  PDF EXPORT
+// ═══════════════════════════════════════════
+function exportIndividualPDF(id){
+  const ind=getIndividual(id);
+  if(!ind){return;}
+  const photos=ind.photos||[];
+  const w=latestWeight(id)||ind.weight||0;
+  const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  const today=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+
+  // Weight chart SVG (wider for print)
+  let chartSvg='';
+  if(logs.length>=2){
+    const ws=logs.map(l=>l.weight);
+    const mnW=Math.min(...ws)-5, mxW=Math.max(...ws)+5;
+    const W=480,H=130;
+    const px=(i)=>Math.round(24+i*((W-40)/(logs.length-1)));
+    const py=(wv)=>Math.round(H-20-((wv-mnW)/(mxW-mnW))*(H-36));
+    const pts=logs.map((l,i)=>`${px(i)},${py(l.weight)}`).join(' ');
+    const gridLines=[0,.25,.5,.75,1].map(t=>{
+      const y=py(mnW+t*(mxW-mnW));
+      const wv=(mnW+t*(mxW-mnW)).toFixed(1);
+      return`<line x1="24" y1="${y}" x2="${W-8}" y2="${y}" stroke="#e8e3db" stroke-width="1"/>
+        <text x="20" y="${y+4}" font-size="9" fill="#aaa" text-anchor="end">${wv}</text>`;
+    }).join('');
+    const dots=logs.map((l,i)=>{
+      const x=px(i), y=py(l.weight);
+      const showL=logs.length<=10||i%Math.ceil(logs.length/10)===0||i===logs.length-1;
+      return`<circle cx="${x}" cy="${y}" r="4.5" fill="#c9953a" stroke="#fff" stroke-width="1.5"/>
+        ${showL?`<text x="${x}" y="${y-9}" font-size="9" fill="#555" text-anchor="middle" font-weight="600">${l.weight}g</text>`:''}`;
+    }).join('');
+    const threshLine=(ind.sex==='F'&&50>=mnW&&50<=mxW)?
+      `<line x1="24" y1="${py(50)}" x2="${W-8}" y2="${py(50)}" stroke="#d4a017" stroke-width="1.5" stroke-dasharray="6,4"/>
+       <text x="${W-10}" y="${py(50)-4}" font-size="9" fill="#d4a017" text-anchor="end">50g 門檻</text>`:'';
+    chartSvg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;background:#faf8f4;border-radius:8px;border:1px solid #ece8e1;overflow:visible">
+      ${gridLines}${threshLine}
+      <polyline points="${pts}" fill="none" stroke="#c9953a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>`;
+  }
+
+  // Breeding readiness bar
+  let readinessHtml='';
+  if(ind.species==='amyae'){
+    const targetW=ind.sex==='F'?60:40;
+    const minThresh=ind.sex==='F'?50:30;
+    const pct=Math.min(100,Math.round((w/targetW)*100));
+    const minPct=Math.round((minThresh/targetW)*100);
+    const col=w>=targetW?'#16a34a':w>=minThresh?'#d97706':'#dc2626';
+    const lbl=w>=targetW?'繁殖最佳狀態':w>=minThresh?'邊緣可配對':'尚未達標';
+    readinessHtml=`<div style="margin:14px 0 0">
+      <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">繁殖就緒評估 · Breeding Readiness</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="flex:1;background:#f0ebe1;border-radius:4px;height:10px;overflow:hidden;position:relative">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:4px;transition:width .3s"></div>
+          <div style="position:absolute;top:0;bottom:0;left:${minPct}%;width:2px;background:#d97706;opacity:.7"></div>
+        </div>
+        <span style="font-size:12px;font-weight:800;color:${col};white-space:nowrap;min-width:160px">${w}g / ${targetW}g &nbsp;—&nbsp; ${lbl}</span>
+      </div>
+    </div>`;
+  }
+
+  // Photo gallery
+  const photosHtml=photos.length>0?`<div style="display:grid;grid-template-columns:repeat(${Math.min(photos.length,5)},1fr);gap:8px;margin:16px 0 20px">
+    ${photos.slice(0,5).map(p=>`<div style="border-radius:10px;overflow:hidden;aspect-ratio:1;background:#f0ebe1;border:1px solid #e8e3db"><img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')}
+  </div>`:'<div style="text-align:center;padding:20px;color:#bbb;font-size:13px;border:1px dashed #e0d9ce;border-radius:10px;margin:16px 0 20px">尚無個體照片</div>';
+
+  // Notes block
+  const notesHtml=ind.notes?`<div style="margin-top:12px;padding:10px 14px;background:#faf8f4;border-left:3px solid #c9953a;border-radius:0 8px 8px 0;font-size:13px;color:#333">
+    <span style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">備註</span>${ind.notes}</div>`:'';
+
+  // Log table rows
+  const logRows=logs.length===0
+    ?`<tr><td colspan="7" style="text-align:center;padding:20px;color:#bbb">尚無培育日誌記錄</td></tr>`
+    :logs.map((l,i)=>{
+        const prev=logs[i-1];
+        const delta=prev?+(l.weight-prev.weight).toFixed(1):null;
+        const dStr=delta===null?'—':delta>=0?`+${delta}g`:`${delta}g`;
+        const dCol=delta===null?'#999':delta>=0?'#16a34a':'#dc2626';
+        const bgEven=i%2===0?'':'background:#faf8f4';
+        return`<tr style="${bgEven}">
+          <td>${formatDate(l.date)}</td>
+          <td style="font-weight:700;color:#1a1a1a">${l.weight}g</td>
+          <td style="color:${dCol};font-weight:700">${dStr}</td>
+          <td>${appetiteLabel[l.appetite]||l.appetite||'—'}</td>
+          <td>${(l.food||[]).join('、')||'—'}</td>
+          <td>${(l.supplements||[]).join('、')||'—'}</td>
+          <td style="color:#888;font-size:11px">${l.notes||'—'}</td>
+        </tr>`;
+      }).join('');
+
+  const html=`<style>
+    #printArea *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+    #printArea{font-family:'PingFang TC','Microsoft JhengHei','Hiragino Sans GB','Noto Sans TC',sans-serif;color:#1a1a1a;line-height:1.6;background:#fff}
+    .pp{max-width:176mm;margin:0 auto}
+    .pp-hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #c9953a;padding-bottom:12px;margin-bottom:22px}
+    .pp-brand{font-size:20px;font-weight:900;letter-spacing:3px;color:#1a1a1a}
+    .pp-brand-en{font-size:10px;color:#888;letter-spacing:2px;margin-top:1px;font-weight:600;text-transform:uppercase}
+    .pp-meta{text-align:right;font-size:11px;color:#888;line-height:1.7}
+    .pp-meta strong{color:#333;display:block}
+    .pp-id{font-size:26px;font-weight:900;color:#1a1a1a;letter-spacing:2px;margin:0 0 14px}
+    .pp-grid{display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:0;border:1.5px solid #e8e3db;border-radius:10px;overflow:hidden;margin-bottom:0}
+    .pp-lbl{background:#faf8f4;padding:9px 12px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #ece8e1}
+    .pp-val{padding:9px 12px;font-size:13px;color:#1a1a1a;border-bottom:1px solid #ece8e1}
+    .pp-grid>*:nth-last-child(-n+4){border-bottom:none}
+    .pp-sec{font-size:11px;font-weight:800;color:#c9953a;text-transform:uppercase;letter-spacing:2px;margin:22px 0 10px;padding-bottom:6px;border-bottom:1.5px solid #ece8e1}
+    .pp-tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .pp-tbl th{background:#faf8f4;padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e8e3db}
+    .pp-tbl td{padding:8px 10px;border-bottom:1px solid #f0ece6}
+    .pp-tbl tr:last-child td{border-bottom:none}
+    .pp-footer{margin-top:28px;padding-top:14px;border-top:1px solid #e8e3db;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .pp-footer-brand{font-size:11px;font-weight:700;color:#888;letter-spacing:1px}
+    .pp-footer-note{font-size:10px;color:#bbb;text-align:right}
+    .pp-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#e8f5e9;color:#1b5e20}
+    @media print{
+      .pp{max-width:100%}
+      .pp-grid{break-inside:avoid}
+      .pp-tbl tr{break-inside:avoid}
+    }
+  </style>
+  <div class="pp">
+    <div class="pp-hdr">
+      <div>
+        <div class="pp-brand">陽台人</div>
+        <div class="pp-brand-en">Nephrurus amyae · 個體數位履歷 · Individual Profile</div>
+      </div>
+      <div class="pp-meta">產出日期<strong>${today}</strong></div>
+    </div>
+    ${photosHtml}
+    <div class="pp-id">${ind.id}</div>
+    <div class="pp-grid">
+      <div class="pp-lbl">物種</div><div class="pp-val">${speciesLabel[ind.species]||ind.species}</div>
+      <div class="pp-lbl">性別</div><div class="pp-val">${ind.sex==='F'?'母 ♀':ind.sex==='M'?'公 ♂':'未顯 ⚲'}</div>
+      <div class="pp-lbl">取得日期</div><div class="pp-val">${ind.acquireDate||'—'}</div>
+      <div class="pp-lbl">世代</div><div class="pp-val" style="font-weight:800;color:#c9953a">${ind.generation||'F0'}</div>
+      <div class="pp-lbl">當前體重</div><div class="pp-val" style="font-weight:800;font-size:15px">${w} g</div>
+      <div class="pp-lbl">現況</div><div class="pp-val"><span class="pp-badge">${statusLabel[ind.status]||ind.status}</span></div>
+      <div class="pp-lbl">文件 / 進口號</div><div class="pp-val">${ind.docNo||'—'}</div>
+      <div class="pp-lbl">品系 / 體色</div><div class="pp-val">${ind.color||'Normal'}</div>
+    </div>
+    ${ind.source?`<div style="margin-top:8px;padding:8px 12px;background:#faf8f4;border:1px solid #e8e3db;border-radius:6px;font-size:12px;color:#555"><span style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-right:10px">來源</span>${ind.source}</div>`:''}
+    ${readinessHtml}
+    ${notesHtml}
+    ${(()=>{
+      const fa=ind.fatherId?getIndividual(ind.fatherId):null;
+      const mo=ind.motherId?getIndividual(ind.motherId):null;
+      if(!fa&&!mo) return'';
+      const card=(p,label,sym)=>{
+        const photos=p?(p.photos||[]):[];
+        const photoGrid=photos.length>0
+          ?photos.slice(0,3).map(src=>`<div style="border-radius:8px;overflow:hidden;aspect-ratio:1;background:#f0ebe1;border:1px solid #e8e3db"><img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')
+          :`<div style="border-radius:8px;aspect-ratio:1;background:#f0ebe1;border:1px dashed #d0c9be;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:24px">${sym}</div>`;
+        const cols=Math.min(photos.length||1,3);
+        return`<div style="flex:1;background:#faf8f4;border:1.5px solid #e8e3db;border-radius:10px;padding:14px">
+          <div style="font-size:10px;font-weight:800;color:#c9953a;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">${label}</div>
+          <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:6px;margin-bottom:10px">${photoGrid}</div>
+          <div style="font-size:16px;font-weight:900;color:#1a1a1a;letter-spacing:1px">${p?p.id:'—'}</div>
+          ${p?`<div style="font-size:11px;color:#888;margin-top:2px">${p.generation||'F0'} · ${p.color||'Normal'}${p.source?' · '+p.source:''}</div>`:''}
+        </div>`;
+      };
+      return`<div style="margin-top:8px"><div class="pp-sec">血統 · Bloodline</div>
+        <div style="display:flex;gap:12px">${card(fa,'父體 Father ♂','♂')}${card(mo,'母體 Mother ♀','♀')}</div>
+      </div>`;
+    })()}
+    <div class="pp-sec">培育日誌 · Care Log（共 ${logs.length} 筆）</div>
+    <table class="pp-tbl">
+      <thead><tr><th>日期</th><th>體重</th><th>增減</th><th>食慾</th><th>主食</th><th>補充劑</th><th>備註</th></tr></thead>
+      <tbody>${logRows}</tbody>
+    </table>
+    ${logs.length>=2?`<div class="pp-sec" style="margin-top:22px">體重趨勢 · Weight Trend</div>${chartSvg}`:''}
+    <div class="pp-footer">
+      <div class="pp-footer-brand">陽台人水族企業社 · TAIWAN CB</div>
+      <div class="pp-footer-note">本文件由數位管理系統自動產出，僅供交易參考使用<br>${ind.id} · ${today}</div>
+    </div>
+  </div>`;
+
+  const area=document.getElementById('printArea');
+  area.innerHTML=html;
+  setTimeout(()=>window.print(),150);
+}
+
+// ═══════════════════════════════════════════
+//  PHOTO — individual detail (直接在 modal 操作)
+// ═══════════════════════════════════════════
+let _photoUpdateTargetId=null;
+function triggerIndividualPhotoAdd(id){
+  const ind=getIndividual(id);
+  if(!ind||(ind.photos||[]).length>=5){ toast('最多5張照片'); return; }
+  _photoUpdateTargetId=id;
+  document.getElementById('photoUpdateFile').click();
+}
+function applyPhotoUpdate(input){
+  if(!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const ind=getIndividual(_photoUpdateTargetId);
+    if(ind){
+      if(!ind.photos) ind.photos=[];
+      if(ind.photos.length<5){ ind.photos.push(e.target.result); saveData(); renderRegistry(); showIndividual(_photoUpdateTargetId); toast('照片已新增'); }
+    }
+    input.value='';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function removeIndividualPhoto(id,index){
+  const ind=getIndividual(id);
+  if(!ind||!ind.photos) return;
+  if(!confirm('確定移除此張照片？')) return;
+  ind.photos.splice(index,1);
+  saveData(); renderRegistry(); showIndividual(id); toast('照片已移除');
+}
+
+// ═══════════════════════════════════════════
+//  PHOTO — form (新增/編輯 modal 內操作)
+// ═══════════════════════════════════════════
+let _newPhotos=[];
+function renderFormPhotoSlots(){
+  const container=document.getElementById('photoSlotsContainer');
+  if(!container) return;
+  document.getElementById('formPhotoLabel').textContent=`個體照片（${_newPhotos.length}/5）`;
+  container.innerHTML=[0,1,2,3,4].map(i=>{
+    if(_newPhotos[i]) return`<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--surface3)">
+      <img src="${_newPhotos[i]}" style="width:100%;height:100%;object-fit:cover">
+      <button onclick="removeFormPhoto(${i})" style="position:absolute;top:3px;right:3px;background:rgba(239,68,68,.85);border:none;color:#fff;border-radius:4px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button>
+    </div>`;
+    if(_newPhotos.length<5) return`<div onclick="addFormPhoto()" style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:22px;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+</div>`;
+    return`<div style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;opacity:.2"></div>`;
+  }).join('');
+}
+function addFormPhoto(){
+  if(_newPhotos.length>=5){ toast('最多5張照片'); return; }
+  document.getElementById('newPhotoFile').click();
+}
+function handleFormPhotoSelect(input){
+  if(!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(_newPhotos.length<5){ _newPhotos.push(e.target.result); renderFormPhotoSlots(); }
+    input.value='';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function removeFormPhoto(index){
+  _newPhotos.splice(index,1);
+  renderFormPhotoSlots();
+}
+
+// ═══════════════════════════════════════════
+//  DELETE INDIVIDUAL
+// ═══════════════════════════════════════════
+function deleteIndividual(id){
+  const ind=getIndividual(id);
+  if(!ind) return;
+  const logCount=DATA.weightLogs.filter(l=>l.individualId===id).length;
+  const confirmMsg=logCount>0
+    ? `確定刪除個體「${id}」？\n同時會刪除該個體的 ${logCount} 筆體重記錄，此操作無法復原。`
+    : `確定刪除個體「${id}」？此操作無法復原。`;
+  if(!confirm(confirmMsg)) return;
+  DATA.individuals=DATA.individuals.filter(i=>i.id!==id);
+  DATA.weightLogs=DATA.weightLogs.filter(l=>l.individualId!==id);
+  saveData();
+  closeModal('modalIndividual');
+  renderRegistry();
+  updateHeaderStats();
+  toast(`已刪除 ${id}`);
+}
+
+// ═══════════════════════════════════════════
+//  ADD / EDIT INDIVIDUAL
+// ═══════════════════════════════════════════
+let _editIndividualId=null;
+
+function _resetAddEditModal(mode){
+  // mode: 'add' | 'edit'
+  const isEdit=mode==='edit';
+  document.getElementById('modalAddIndTitle').textContent=isEdit?'編輯個體資料':'新增個體';
+  document.getElementById('modalAddIndSaveBtn').textContent=isEdit?'儲存變更':'新增';
+  document.getElementById('newId').readOnly=isEdit;
+  document.getElementById('newId').style.opacity=isEdit?'.5':'1';
+  document.getElementById('newIdLabel').textContent=isEdit?'個體編號（不可修改）':'個體編號';
+  document.getElementById('newWeightLabel').textContent=isEdit?'基準體重（g）— 若已有日誌則以日誌最新值為準':'當前體重（g）';
+}
+
+function populateParentSelects(excludeId,fatherVal,motherVal){
+  const none='<option value="">— 不明 / 無 —</option>';
+  const males=DATA.individuals.filter(i=>i.sex==='M'&&i.id!==excludeId);
+  const females=DATA.individuals.filter(i=>i.sex==='F'&&i.id!==excludeId);
+  document.getElementById('newFatherId').innerHTML=none+males.map(i=>`<option value="${i.id}">${i.id}${i.generation?' · '+i.generation:''}</option>`).join('');
+  document.getElementById('newMotherId').innerHTML=none+females.map(i=>`<option value="${i.id}">${i.id}${i.generation?' · '+i.generation:''}</option>`).join('');
+  if(fatherVal) document.getElementById('newFatherId').value=fatherVal;
+  if(motherVal) document.getElementById('newMotherId').value=motherVal;
+}
+
+function openAddIndividual(){
+  _editIndividualId=null;
+  _resetAddEditModal('add');
+  ['newId','newDate','newWeight','newSource','newDoc','newColor','newNotes'].forEach(f=>{
+    const el=document.getElementById(f); if(el) el.value='';
+  });
+  document.getElementById('newSpecies').value='amyae';
+  document.getElementById('newSex').value='F';
+  document.getElementById('newStatus').value='growing';
+  document.getElementById('newGeneration').value='F0';
+  document.getElementById('newPhotoFile').value='';
+  populateParentSelects(null,'','');
+  _newPhotos=[];
+  renderFormPhotoSlots();
+  document.getElementById('modalAddInd').classList.add('open');
+}
+
+function openEditIndividual(id){
+  const ind=getIndividual(id);
+  if(!ind) return;
+  _editIndividualId=id;
+  _resetAddEditModal('edit');
+  document.getElementById('newId').value=ind.id;
+  document.getElementById('newSpecies').value=ind.species||'amyae';
+  document.getElementById('newSex').value=ind.sex||'F';
+  document.getElementById('newDate').value=ind.acquireDate||'';
+  document.getElementById('newWeight').value=ind.weight||'';
+  document.getElementById('newStatus').value=ind.status||'growing';
+  document.getElementById('newSource').value=ind.source||'';
+  document.getElementById('newDoc').value=ind.docNo||'';
+  document.getElementById('newGeneration').value=ind.generation||'F0';
+  document.getElementById('newColor').value=ind.color||'';
+  document.getElementById('newNotes').value=ind.notes||'';
+  document.getElementById('newPhotoFile').value='';
+  populateParentSelects(id, ind.fatherId||'', ind.motherId||'');
+  _newPhotos=[...(ind.photos||[])];
+  renderFormPhotoSlots();
+  document.getElementById('modalAddInd').classList.add('open');
+}
+
+function handleIndividualSave(){
+  if(_editIndividualId) saveEditIndividual();
+  else saveNewIndividual();
+}
+
+function saveNewIndividual(){
+  const id=document.getElementById('newId').value.trim();
+  if(!id){ toast('請輸入個體編號'); return; }
+  if(DATA.individuals.find(i=>i.id===id)){ toast('個體編號已存在'); return; }
+  const w=parseFloat(document.getElementById('newWeight').value)||0;
+  DATA.individuals.push({
+    id, species:document.getElementById('newSpecies').value,
+    sex:document.getElementById('newSex').value,
+    acquireDate:document.getElementById('newDate').value,
+    source:document.getElementById('newSource').value,
+    fatherId:document.getElementById('newFatherId').value||'',
+    motherId:document.getElementById('newMotherId').value||'',
+    docNo:document.getElementById('newDoc').value,
+    generation:document.getElementById('newGeneration').value||'F0',
+    color:document.getElementById('newColor').value||'Normal',
+    status:document.getElementById('newStatus').value,
+    weight:w, notes:document.getElementById('newNotes').value,
+    photos:[..._newPhotos]
+  });
+  if(w>0){
+    DATA.weightLogs.push({id:`WL-${Date.now()}`,individualId:id,date:new Date().toISOString().split('T')[0],weight:w,appetite:'good',food:[],supplements:[],notes:'初始體重記錄'});
+  }
+  saveData(); closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
+  toast(`✅ ${id} 已新增`);
+}
+
+function saveEditIndividual(){
+  const id=_editIndividualId;
+  const ind=getIndividual(id);
+  if(!ind){ toast('找不到個體'); return; }
+  ind.species=document.getElementById('newSpecies').value;
+  ind.sex=document.getElementById('newSex').value;
+  ind.acquireDate=document.getElementById('newDate').value;
+  ind.source=document.getElementById('newSource').value;
+  ind.fatherId=document.getElementById('newFatherId').value||'';
+  ind.motherId=document.getElementById('newMotherId').value||'';
+  ind.docNo=document.getElementById('newDoc').value;
+  ind.generation=document.getElementById('newGeneration').value||'F0';
+  ind.color=document.getElementById('newColor').value||'Normal';
+  ind.status=document.getElementById('newStatus').value;
+  ind.notes=document.getElementById('newNotes').value;
+  // weight: only update reference if no logs exist, or if user explicitly changed it
+  const newW=parseFloat(document.getElementById('newWeight').value)||0;
+  const hasLogs=DATA.weightLogs.some(l=>l.individualId===id);
+  if(!hasLogs && newW>0) ind.weight=newW;
+  // photos
+  ind.photos=[..._newPhotos];
+  saveData();
+  closeModal('modalAddInd');
+  renderRegistry();
+  updateHeaderStats();
+  showIndividual(id);
+  _editIndividualId=null;
+  toast(`✅ ${id} 資料已更新`);
+}
+
+// ═══════════════════════════════════════════
+//  LOGS
+// ═══════════════════════════════════════════
+function populateLogSelects(){
+  const amyae=DATA.individuals.filter(i=>i.species==='amyae');
+  const opts=amyae.map(i=>`<option value="${i.id}">${i.id} （${i.sex==='F'?'♀':'♂'}）</option>`).join('');
+  document.getElementById('logIndividual').innerHTML='<option value="">— 選擇個體 —</option>'+opts;
+  document.getElementById('logFilterIndividual').innerHTML='<option value="">全部個體</option>'+
+    DATA.individuals.map(i=>`<option value="${i.id}">${i.id}</option>`).join('');
+  document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
+  // egg selects
+  const fm=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
+  const mm=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='M');
+  document.getElementById('eggMother').innerHTML=fm.map(i=>`<option value="${i.id}">${i.id}</option>`).join('');
+  document.getElementById('eggFather').innerHTML=mm.map(i=>`<option value="${i.id}">${i.id}</option>`).join('');
+}
+function onLogIndividualChange(){
+  const id=document.getElementById('logIndividual').value;
+  const badge=document.getElementById('currentWeightBadge');
+  if(!id){badge.style.display='none';return;}
+  const w=latestWeight(id);
+  badge.style.display='block';
+  document.getElementById('cwValue').textContent=w?`${w} g`:'無記錄';
+}
+function getSelectedChips(containerId){
+  return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c=>c.dataset.val);
+}
+function saveLog(){
+  const id=document.getElementById('logIndividual').value;
+  const weight=parseFloat(document.getElementById('logWeight').value);
+  const date=document.getElementById('logDate').value;
+  if(!id){toast('請選擇個體');return;}
+  if(!weight||weight<=0){toast('請輸入有效體重');return;}
+  if(!date){toast('請輸入日期');return;}
+  const log={
+    id:`WL-${Date.now()}`,individualId:id,date,weight,
+    appetite:document.getElementById('logAppetite').value,
+    food:getSelectedChips('foodChips'),
+    supplements:getSelectedChips('suppChips'),
+    notes:document.getElementById('logNotes').value
+  };
+  DATA.weightLogs.push(log);
+  // sync ind.weight to the chronologically latest log (handles backdated entries)
+  const ind=getIndividual(id);
+  if(ind){
+    const latest=DATA.weightLogs
+      .filter(l=>l.individualId===id)
+      .sort((a,b)=>b.date.localeCompare(a.date))[0];
+    if(latest) ind.weight=latest.weight;
+  }
+  saveData();
+  document.getElementById('logWeight').value='';
+  document.getElementById('logNotes').value='';
+  onLogIndividualChange();
+  renderLogs();
+  renderRegistry();
+  updateHeaderStats();
+  toast(`✅ 已記錄 ${id} 體重 ${weight}g`);
+}
+function renderLogs(){
+  const filterInd=document.getElementById('logFilterIndividual').value;
+  const filterSp=document.getElementById('logFilterSpecies').value;
+  let logs=[...DATA.weightLogs].filter(l=>{
+    if(filterInd && l.individualId!==filterInd) return false;
+    if(filterSp){
+      const ind=getIndividual(l.individualId);
+      if(!ind||ind.species!==filterSp) return false;
+    }
+    return true;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('logCount').textContent=`${logs.length} 筆記錄`;
+  if(logs.length===0){
+    document.getElementById('logContent').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">尚無記錄</div>';
+    return;
+  }
+  document.getElementById('logContent').innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <table class="data-table">
+        <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>主食</th><th>備註</th></tr></thead>
+        <tbody>${logs.map(l=>{
+          // find prev log for same individual
+          const prevLogs=DATA.weightLogs.filter(x=>x.individualId===l.individualId&&x.date<l.date).sort((a,b)=>b.date.localeCompare(a.date));
+          const prev=prevLogs[0];
+          const delta=prev?+(l.weight-prev.weight).toFixed(1):null;
+          const deltaHtml=delta===null?'<span style="color:var(--muted)">—</span>':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
+          const apColor={excellent:'var(--green)',good:'var(--accent2)',poor:'var(--yellow)',refused:'var(--red)'};
+          return`<tr>
+            <td style="color:var(--muted)">${formatDate(l.date)}</td>
+            <td><strong style="color:var(--accent2)">${l.individualId}</strong></td>
+            <td><strong>${l.weight}g</strong></td>
+            <td>${deltaHtml}</td>
+            <td style="color:${apColor[l.appetite]||'var(--text)'}">${appetiteLabel[l.appetite]||l.appetite}</td>
+            <td style="color:var(--muted);font-size:12px">${l.food.join('、')||'—'}</td>
+            <td style="color:var(--muted);font-size:12px">${l.notes||'—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  KANBAN
+// ═══════════════════════════════════════════
+const EGG_STAGES=[
+  {id:'waiting',label:'等待出土（母體箱）'},
+  {id:'incubating',label:'孵化箱中'},
+  {id:'hatched',label:'已順利破殼'},
+  {id:'eating',label:'穩定開食（可轉商品）'}
+];
+const EGG_STAGE_SHORT={waiting:'⬜ 母體箱',incubating:'🔵 孵化中',hatched:'🟡 已破殼',eating:'🟢 可轉商品'};
+function renderKanban(){
+  const board=document.getElementById('kanbanBoard');
+  board.innerHTML=EGG_STAGES.map(s=>{
+    const eggs=DATA.eggs.filter(e=>e.status===s.id);
+    return`<div class="kanban-col" ondragover="event.preventDefault()" ondrop="dropEgg(event,'${s.id}')">
+      <div class="kanban-col-hdr">${s.label}<span class="cnt">${eggs.length}</span></div>
+      ${eggs.length===0?'<div class="kanban-placeholder">拖曳蛋卡至此欄<br>或點擊「＋新增蛋」</div>':''}
+      ${eggs.map(e=>`<div class="egg-card" draggable="true" ondragstart="dragEgg(event,'${e.id}')">
+        <div class="egg-id">${e.id}</div>
+        <div class="egg-info">
+          母：${e.motherId||'—'}<br>
+          產蛋：${formatDate(e.layDate)}<br>
+          預計破殼：<strong style="color:var(--accent2)">${formatDate(e.expectedHatchDate)}</strong><br>
+          ${e.incubator?`孵化箱：${e.incubator}｜${e.incubTemp}°C`:''}
+        </div>
+        <div class="egg-stages">${EGG_STAGES.filter(st=>st.id!==s.id).map(st=>`<button class="egg-stage-btn" onclick="event.stopPropagation();moveEggTo('${e.id}','${st.id}')">${EGG_STAGE_SHORT[st.id]}</button>`).join('')}</div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+let dragEggId=null;
+function dragEgg(ev,id){ dragEggId=id; ev.dataTransfer.effectAllowed='move'; }
+function dropEgg(ev,status){
+  if(!dragEggId) return;
+  const egg=DATA.eggs.find(e=>e.id===dragEggId);
+  if(egg){ egg.status=status; saveData(); renderKanban(); toast('已更新狀態'); }
+  dragEggId=null;
+}
+function moveEggTo(eggId,stageId){
+  const egg=DATA.eggs.find(e=>e.id===eggId);
+  if(egg){egg.status=stageId;saveData();renderKanban();toast('已移至：'+(EGG_STAGE_SHORT[stageId]||stageId));}
+}
+function openAddEgg(){ populateLogSelects(); document.getElementById('modalAddEgg').classList.add('open'); calcHatch(); }
+function calcHatch(){
+  const d=document.getElementById('eggLayDate').value;
+  const t=parseInt(document.getElementById('eggTemp')?.value||27);
+  if(!d){document.getElementById('eggHatchDate').value='—';return;}
+  const days=t<=27?85:t<=28?78:70;
+  const dt=new Date(d); dt.setDate(dt.getDate()+days);
+  document.getElementById('eggHatchDate').value=formatDate(dt.toISOString().split('T')[0]);
+}
+function saveNewEgg(){
+  const id=document.getElementById('eggId').value.trim();
+  if(!id){toast('請輸入蛋編號');return;}
+  const layDate=document.getElementById('eggLayDate').value;
+  const temp=parseInt(document.getElementById('eggTemp').value||27);
+  const days=temp<=27?85:temp<=28?78:70;
+  let expectedHatchDate='';
+  if(layDate){const d=new Date(layDate);d.setDate(d.getDate()+days);expectedHatchDate=d.toISOString().split('T')[0];}
+  DATA.eggs.push({
+    id,motherId:document.getElementById('eggMother').value,
+    fatherId:document.getElementById('eggFather').value,
+    layDate,incubTemp:temp,expectedHatchDate,
+    incubator:document.getElementById('eggIncubator').value,
+    eggWeight:parseFloat(document.getElementById('eggWeight').value)||null,
+    notes:document.getElementById('eggNotes').value,
+    status:'waiting'
+  });
+  saveData(); closeModal('modalAddEgg'); renderKanban(); toast(`✅ ${id} 已新增`);
+}
+
+// ═══════════════════════════════════════════
+//  BUSINESS
+// ═══════════════════════════════════════════
+function renderBusiness(){
+  renderWeightLadder();
+  renderProjections();
+  renderTimeline();
+  renderActionList();
+}
+function renderWeightLadder(){
+  const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
+  if(females.length===0){
+    document.getElementById('weightLadder').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">新增棘皮瘤尾守宮母體個體後，此處自動顯示增重進度。</div>';
+    return;
+  }
+  const maxW=70;
+  const ladder=females.map(ind=>{
+    const w=latestWeight(ind.id)||ind.weight;
+    const pct=Math.min(100,Math.round(w/maxW*100));
+    const col=w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--red)';
+    const eta=etaMonths(w,60);
+    const etaStr=eta?`+${eta}月`:'✅';
+    return`<div class="ladder-row">
+      <span class="ladder-id">${ind.id}</span>
+      <div class="ladder-bar-wrap">
+        <div class="ladder-bar" style="width:${pct}%;background:${col}">${w}g</div>
+        <div class="ladder-line ladder-line-50"></div>
+        <div class="ladder-line ladder-line-60"></div>
+      </div>
+      <span class="ladder-weight">${w}g</span>
+      <span class="ladder-eta" style="color:${w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--muted)'}">${etaStr}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('weightLadder').innerHTML=ladder;
+}
+function renderProjections(){
+  const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
+  const readyNow=females.filter(i=>(latestWeight(i.id)||i.weight)>=50).length;
+  const readyBy2027=females.filter(i=>{
+    const w=latestWeight(i.id)||i.weight;
+    const eta=etaMonths(w,50);
+    return eta<=9; // by March 2027
+  }).length;
+  const fmtNT=n=>`NT$${n.toLocaleString()}`;
+  document.getElementById('projA').textContent=fmtNT(readyNow*2*1.2*15000 || 80000);
+  document.getElementById('projB').textContent=fmtNT(Math.round(readyBy2027*2.2*1.15*18000));
+  document.getElementById('projC').textContent=fmtNT(Math.round((readyNow*2*15000)+(readyBy2027*2.2*18000)));
+}
+function renderTimeline(){
+  const milestones=[
+    {date:'2026-06-20',label:'今日基準點',desc:(()=>{const ws=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F').map(i=>latestWeight(i.id)||i.weight);return ws.length?`最重母體 ${Math.max(...ws)}g，啟動「養兵蓄銳」階段`:'尚無母體資料，新增個體後此處自動更新';})(),color:'var(--accent2)'},
+    {date:'2026-07',label:'IG/Twitter 帳號上線',desc:'開始記錄個體日常，建立等待名單，品牌預熱啟動',color:'var(--blue)'},
+    {date:'2026-09',label:'情境A決策點',desc:'若有個體≥50g，評估是否啟動縮短冷卻期（7–8月），9月配對',color:'var(--green)'},
+    {date:'2026-11',label:'標準冷卻期開始',desc:'情境B路線：全體進入 11–1 月降溫週期',color:'var(--phase-cool,#3b5bdb)'},
+    {date:'2027-03',label:'正式配對（情境B）',desc:'達標個體引入配對，預計可配對母體 8–12 隻',color:'var(--red)'},
+    {date:'2027-05',label:'產卵期',desc:'第一批卵入孵蛋箱，IG 直播孵化過程',color:'var(--purple)'},
+    {date:'2027-08',label:'首批幼體破殼',desc:'情境B首批幼體，建立個體 QR Code 履歷',color:'var(--green)'},
+    {date:'2027-11',label:'首批台灣銷售',desc:'幼體 3 個月大，正式開售，目標 NT$200,000+',color:'var(--accent2)'},
+    {date:'2028-06',label:'副業超主業目標',desc:'月副業收入 ≥ NT$69,000，達成 2028 年6月前目標',color:'var(--green)'},
+  ];
+  document.getElementById('incomeTimeline').innerHTML=`<div style="position:relative;padding-left:20px">
+    <div style="position:absolute;left:6px;top:10px;bottom:10px;width:2px;background:var(--border)"></div>
+    ${milestones.map((m,i)=>`<div style="position:relative;padding:8px 0 8px 20px;display:flex;gap:12px;align-items:flex-start">
+      <div style="position:absolute;left:-7px;top:14px;width:14px;height:14px;border-radius:50%;background:${m.color};border:2px solid var(--bg);flex-shrink:0"></div>
+      <div style="min-width:55px;font-size:11px;color:var(--muted);padding-top:2px">${m.date}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${m.label}</div>
+        <div style="font-size:12px;color:var(--muted)">${m.desc}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+function renderActionList(){
+  const actions=[
+    {priority:'🔴',time:'本週',action:'逐一稱量 32 隻 amyae，填入個體履歷體重欄位','note':'確定情境A / B / 混合策略'},
+    {priority:'🔴',time:'本週',action:'電洽台灣農業部 04-2302-5101 確認出口文件 SOP','note':'提早確認，避免 2027 出口延誤'},
+    {priority:'🟡',time:'本月',action:'開設 Instagram + Twitter/X 帳號（建議 @amyae.tw）','note':'開始拍攝個體日常、環境介紹'},
+    {priority:'🟡',time:'7–8月',action:'設計「腸填實驗」第一輪（對照組 vs 實驗組飼料）','note':'數據內容的原始素材，8週後輸出科普文'},
+    {priority:'🟢',time:'9月',action:'情境A 決策：若有個體≥50g，啟動縮短冷卻+配對評估','note':'若無，繼續增重，11月進入標準冷卻'},
+    {priority:'🟢',time:'10月',action:'發送第一封日本代理商詢盤 Email（Sauria / Global Animals）','note':'附上個體照片與繁殖計畫書，建立早期關係'},
+    {priority:'🟢',time:'11月',action:'參加台灣爬蟲展（觀察者身份）','note':'確認競爭格局、本地定價基準'},
+  ];
+  document.getElementById('actionList').innerHTML=`<div style="display:flex;flex-direction:column;gap:0">
+    ${actions.map(a=>`<div style="display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">${a.priority}</span>
+      <span style="min-width:45px;font-size:11px;color:var(--muted);padding-top:2px">${a.time}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600">${a.action}</div>
+        <div style="font-size:12px;color:var(--muted)">${a.note}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  HEADER STATS
+// ═══════════════════════════════════════════
+function updateHeaderStats(){
+  const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
+  const readyF=females.filter(i=>(latestWeight(i.id)||i.weight)>=50).length;
+  const avgW=females.length?+(females.reduce((s,i)=>s+(latestWeight(i.id)||i.weight),0)/females.length).toFixed(1):0;
+  const wArr=females.map(i=>latestWeight(i.id)||i.weight);
+  const maxW=wArr.length?Math.max(...wArr):0;
+  const target=new Date('2027-03-01');
+  const now=new Date();
+  const days=Math.ceil((target-now)/(1000*60*60*24));
+  document.getElementById('headerStats').innerHTML=`
+    <div class="stat-pill"><span class="val">${DATA.individuals.length}</span><span class="lbl">總個體數</span></div>
+    <div class="stat-pill"><span class="val">${readyF}/${females.length}</span><span class="lbl">母體就緒</span></div>
+    <div class="stat-pill"><span class="val">${maxW}g</span><span class="lbl">最重母體</span></div>
+    <div class="stat-pill"><span class="val">${avgW}g</span><span class="lbl">母體均重</span></div>
+    <div class="stat-pill"><span class="val">${days}</span><span class="lbl">距配對季（天）</span></div>`;
+}
+
+// ═══════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open')); });
+
+// ═══════════════════════════════════════════
+//  CHIP TOGGLE
+// ═══════════════════════════════════════════
+document.querySelectorAll('.chips').forEach(container=>{
+  container.addEventListener('click',e=>{
+    const chip=e.target.closest('.chip');
+    if(chip) chip.classList.toggle('selected');
+  });
+});
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+loadData();
+updateHeaderStats();
+renderRegistry();
+
+</script>
+</body>
+</html>
