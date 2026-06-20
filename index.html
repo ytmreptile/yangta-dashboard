@@ -219,6 +219,10 @@ button{cursor:pointer;font-family:inherit}
 <div class="hdr">
   <div class="hdr-top">
     <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板</small></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
+      <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
+      <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
+    </div>
     <div class="hdr-stats" id="headerStats"></div>
   </div>
   <div class="tab-bar">
@@ -449,10 +453,10 @@ button{cursor:pointer;font-family:inherit}
       <button class="modal-close" onclick="closeModal('modalAddInd')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-grid">
+      <div class="form-grid" autocomplete="off">
         <div class="form-group">
           <label id="newIdLabel">個體編號</label>
-          <input type="text" id="newId" placeholder="AM-F17">
+          <input type="text" id="newId" placeholder="AM-F17" autocomplete="new-password" oninput="this.dataset.val=this.value">
         </div>
         <div class="form-group">
           <label>物種</label>
@@ -599,6 +603,7 @@ button{cursor:pointer;font-family:inherit}
 <div class="toast" id="toast"></div>
 <div id="printArea"></div>
 <input type="file" id="photoUpdateFile" accept="image/*" style="display:none" onchange="applyPhotoUpdate(this)">
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
 
 <script>
 // ═══════════════════════════════════════════
@@ -1182,7 +1187,7 @@ function openAddIndividual(){
   _editIndividualId=null;
   _resetAddEditModal('add');
   ['newId','newDate','newWeight','newSource','newDoc','newColor','newNotes'].forEach(f=>{
-    const el=document.getElementById(f); if(el) el.value='';
+    const el=document.getElementById(f); if(el){ el.value=''; if(el.dataset) el.dataset.val=''; }
   });
   document.getElementById('newSpecies').value='amyae';
   document.getElementById('newSex').value='F';
@@ -1224,7 +1229,8 @@ function handleIndividualSave(){
 }
 
 function saveNewIndividual(){
-  const id=document.getElementById('newId').value.trim();
+  const idEl=document.getElementById('newId');
+  const id=(idEl.dataset.val!==undefined&&idEl.dataset.val!==''?idEl.dataset.val:idEl.value).trim();
   if(!id){ toast('請輸入個體編號'); return; }
   if(DATA.individuals.find(i=>i.id===id)){ toast('個體編號已存在'); return; }
   const w=parseFloat(document.getElementById('newWeight').value)||0;
@@ -1579,6 +1585,41 @@ document.querySelectorAll('.chips').forEach(container=>{
     if(chip) chip.classList.toggle('selected');
   });
 });
+
+// ═══════════════════════════════════════════
+//  EXPORT / IMPORT
+// ═══════════════════════════════════════════
+function exportData(){
+  const json=JSON.stringify(DATA,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().split('T')[0];
+  a.href=url; a.download=`yangta-backup-${date}.json`; a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ 備份檔已下載');
+}
+function importData(input){
+  if(!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!Array.isArray(imported.individuals)||!Array.isArray(imported.weightLogs)){
+        toast('❌ 格式錯誤，請使用本系統匯出的備份檔'); return;
+      }
+      const msg=`確定匯入？\n\n備份內容：${imported.individuals.length} 隻個體、${imported.weightLogs.length} 筆記錄、${(imported.eggs||[]).length} 顆蛋\n\n⚠️ 這將完全覆蓋此裝置目前的所有資料`;
+      if(!confirm(msg)) return;
+      DATA=migrateData(imported);
+      saveData(); renderRegistry(); updateHeaderStats();
+      toast(`✅ 匯入成功：${imported.individuals.length} 隻個體`);
+    }catch(err){
+      toast('❌ 檔案讀取失敗，請確認格式正確');
+    }
+    input.value='';
+  };
+  reader.readAsText(input.files[0]);
+}
 
 // ═══════════════════════════════════════════
 //  INIT
