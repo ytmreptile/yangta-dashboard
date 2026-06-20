@@ -202,8 +202,9 @@ button:active{opacity:.75}
 #printArea{display:none}
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body,html{background:#fff!important;color:#1a1a1a!important}
   body>*:not(#printArea){display:none!important}
-  #printArea{display:block!important}
+  #printArea{display:block!important;background:#fff!important}
   @page{size:A4 portrait;margin:12mm 15mm}
 }
 /* ── PHOTO ── */
@@ -954,8 +955,8 @@ function exportIndividualPDF(id){
   }
 
   // Photo gallery
-  const photosHtml=photos.length>0?`<div style="display:grid;grid-template-columns:repeat(${Math.min(photos.length,5)},1fr);gap:8px;margin:16px 0 20px">
-    ${photos.slice(0,5).map(p=>`<div style="border-radius:10px;overflow:hidden;aspect-ratio:1;background:#f0ebe1;border:1px solid #e8e3db"><img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')}
+  const photosHtml=photos.length>0?`<div class="pp-photos" style="display:grid;grid-template-columns:repeat(${Math.min(photos.length,3)},1fr);gap:10px;margin:16px 0 20px">
+    ${photos.slice(0,3).map(p=>`<div style="border-radius:10px;overflow:hidden;aspect-ratio:1;background:#f0ebe1;border:1px solid #e8e3db;break-inside:avoid;page-break-inside:avoid"><img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;max-height:180px"></div>`).join('')}
   </div>`:'<div style="text-align:center;padding:20px;color:#bbb;font-size:13px;border:1px dashed #e0d9ce;border-radius:10px;margin:16px 0 20px">尚無個體照片</div>';
 
   // Notes block
@@ -1007,8 +1008,13 @@ function exportIndividualPDF(id){
     .pp-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#e8f5e9;color:#1b5e20}
     @media print{
       .pp{max-width:100%}
-      .pp-grid{break-inside:avoid}
-      .pp-tbl tr{break-inside:avoid}
+      body,html{background:#fff!important}
+      .pp-grid{break-inside:avoid;page-break-inside:avoid}
+      .pp-tbl tr{break-inside:avoid;page-break-inside:avoid}
+      .pp-photos{break-inside:avoid;page-break-inside:avoid}
+      .pp-chart{break-inside:avoid;page-break-inside:avoid}
+      .pp-bloodline{break-inside:avoid;page-break-inside:avoid}
+      img{break-inside:avoid;page-break-inside:avoid;max-height:180px}
     }
   </style>
   <div class="pp">
@@ -1051,7 +1057,7 @@ function exportIndividualPDF(id){
           ${p?`<div style="font-size:11px;color:#888;margin-top:2px">${p.generation||'F0'} · ${p.color||'Normal'}${p.source?' · '+p.source:''}</div>`:''}
         </div>`;
       };
-      return`<div style="margin-top:8px"><div class="pp-sec">血統 · Bloodline</div>
+      return`<div class="pp-bloodline" style="margin-top:8px"><div class="pp-sec">血統 · Bloodline</div>
         <div style="display:flex;gap:12px">${card(fa,'父體 Father ♂','♂')}${card(mo,'母體 Mother ♀','♀')}</div>
       </div>`;
     })()}
@@ -1060,7 +1066,7 @@ function exportIndividualPDF(id){
       <thead><tr><th>日期</th><th>體重</th><th>增減</th><th>食慾</th><th>主食</th><th>補充劑</th><th>備註</th></tr></thead>
       <tbody>${logRows}</tbody>
     </table>
-    ${logs.length>=2?`<div class="pp-sec" style="margin-top:22px">體重趨勢 · Weight Trend</div>${chartSvg}`:''}
+    ${logs.length>=2?`<div class="pp-chart"><div class="pp-sec" style="margin-top:22px">體重趨勢 · Weight Trend</div>${chartSvg}</div>`:''}
     <div class="pp-footer">
       <div class="pp-footer-brand">陽台人水族企業社 · TAIWAN CB</div>
       <div class="pp-footer-note">本文件由數位管理系統自動產出，僅供交易參考使用<br>${ind.id} · ${today}</div>
@@ -1246,10 +1252,8 @@ function handleIndividualSave(){
 }
 
 function saveNewIndividual(){
-  document.title='[DBG]1:start';
   const idEl=document.getElementById('newId');
   const id=(idEl.dataset.val!==undefined&&idEl.dataset.val!==''?idEl.dataset.val:idEl.value).trim();
-  document.title='[DBG]2:id='+id;
   if(!id){ toast('請輸入個體編號'); return; }
   if(DATA.individuals.find(i=>i.id===id)){ toast('個體編號已存在'); return; }
   const w=parseFloat(document.getElementById('newWeight').value)||0;
@@ -1270,16 +1274,8 @@ function saveNewIndividual(){
   if(w>0){
     DATA.weightLogs.push({id:`WL-${Date.now()}`,individualId:id,date:new Date().toISOString().split('T')[0],weight:w,appetite:'good',food:[],supplements:[],notes:'初始體重記錄'});
   }
-  document.title='[DBG]3:saveData';
-  saveData();
-  document.title='[DBG]4:closeModal';
-  closeModal('modalAddInd');
-  document.title='[DBG]5:renderRegistry';
-  renderRegistry();
-  document.title='[DBG]6:updateHeaderStats';
-  updateHeaderStats();
+  saveData(); closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
   toast(`✅ ${id} 已新增`);
-  document.title='陽台人｜飼養繁殖管理儀表板';
 }
 
 function saveEditIndividual(){
