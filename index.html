@@ -220,7 +220,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v2.8</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v2.9</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -499,12 +499,13 @@ button:active{opacity:.75}
         </div>
         <div class="form-group">
           <label>父體（公）</label>
-          <select id="newFatherId"></select>
+          <select id="newFatherId" onchange="checkInbreeding()"></select>
         </div>
         <div class="form-group">
           <label>母體（母）</label>
-          <select id="newMotherId"></select>
+          <select id="newMotherId" onchange="checkInbreeding()"></select>
         </div>
+        <div id="inbreedingWarning" style="grid-column:1/-1;display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--red);font-weight:600"></div>
         <div class="form-group">
           <label>文件/進口號</label>
           <input type="text" id="newDoc" placeholder="26SK000001">
@@ -518,6 +519,8 @@ button:active{opacity:.75}
             <option value="F3">F3</option>
             <option value="F4">F4</option>
             <option value="F5">F5</option>
+            <option value="F6">F6</option>
+            <option value="F7">F7</option>
           </select>
         </div>
         <div class="form-group" style="grid-column:1/-1">
@@ -1197,10 +1200,51 @@ function populateParentSelects(excludeId,fatherVal,motherVal){
   document.getElementById('newMotherId').innerHTML=none+females.map(i=>`<option value="${i.id}">${i.id}${i.generation?' · '+i.generation:''}</option>`).join('');
   if(fatherVal) document.getElementById('newFatherId').value=fatherVal;
   if(motherVal) document.getElementById('newMotherId').value=motherVal;
+  checkInbreeding();
 }
 
-function openAddIndividual(){
+// ═══════════════════════════════════════════
+//  INBREEDING CHECK（近親配對檢查）
+// ═══════════════════════════════════════════
+function checkInbreeding(){
+  const box=document.getElementById('inbreedingWarning');
+  if(!box) return;
+  const fId=document.getElementById('newFatherId').value;
+  const mId=document.getElementById('newMotherId').value;
+  if(!fId||!mId){ box.style.display='none'; box.textContent=''; return; }
+  const father=getIndividual(fId);
+  const mother=getIndividual(mId);
+  if(!father||!mother){ box.style.display='none'; box.textContent=''; return; }
+
+  const reasons=[];
+  // 同父或同母（兄弟姊妹關係）
+  if(father.fatherId && mother.fatherId && father.fatherId===mother.fatherId){
+    reasons.push(`兩者皆為「${father.fatherId}」之子代（同父）`);
+  }
+  if(father.motherId && mother.motherId && father.motherId===mother.motherId){
+    reasons.push(`兩者皆為「${father.motherId}」之子代（同母）`);
+  }
+  // 親代與子代關係（父體本身是母體的父或母，反之亦然）
+  if(mother.fatherId===father.id || mother.motherId===father.id){
+    reasons.push(`${father.id} 為 ${mother.id} 的親代`);
+  }
+  if(father.fatherId===mother.id || father.motherId===mother.id){
+    reasons.push(`${mother.id} 為 ${father.id} 的親代`);
+  }
+
+  if(reasons.length){
+    box.style.display='block';
+    box.innerHTML='⚠️ 偵測到可能近親關係：'+reasons.join('；')+'。建議改選其他配對組合，或謹慎評估後再繼續。';
+  }else{
+    box.style.display='none';
+    box.textContent='';
+  }
+}
+
+let _convertFromEggId=null;
+function openAddIndividual(prefill){
   _editIndividualId=null;
+  _convertFromEggId=(prefill&&prefill._eggId)?prefill._eggId:null;
   _resetAddEditModal('add');
   ['newId','newDate','newWeight','newSource','newDoc','newColor','newNotes'].forEach(f=>{
     const el=document.getElementById(f); if(el){ el.value=''; if(el.dataset) el.dataset.val=''; }
@@ -1213,7 +1257,38 @@ function openAddIndividual(){
   populateParentSelects(null,'','');
   _newPhotos=[];
   renderFormPhotoSlots();
+  // 若由孵化看板「轉為正式個體」帶入預設值
+  if(prefill){
+    if(prefill.fatherId) document.getElementById('newFatherId').value=prefill.fatherId;
+    if(prefill.motherId) document.getElementById('newMotherId').value=prefill.motherId;
+    if(prefill.acquireDate) document.getElementById('newDate').value=prefill.acquireDate;
+    if(prefill.weight) document.getElementById('newWeight').value=prefill.weight;
+    if(prefill.notes) document.getElementById('newNotes').value=prefill.notes;
+    if(prefill.generation) document.getElementById('newGeneration').value=prefill.generation;
+    checkInbreeding();
+  }
   openModal('modalAddInd');
+}
+
+function convertEggToIndividual(eggId){
+  const egg=DATA.eggs.find(e=>e.id===eggId);
+  if(!egg){ toast('找不到該蛋紀錄'); return; }
+  // 推算上一代世代（若母體有世代資料，子代世代為母體世代+1；否則預設F1）
+  let gen='F1';
+  const mother=egg.motherId?getIndividual(egg.motherId):null;
+  if(mother&&mother.generation){
+    const m=mother.generation.match(/F(\d+)/);
+    if(m) gen='F'+(parseInt(m[1])+1);
+  }
+  openAddIndividual({
+    _eggId: egg.id,
+    fatherId: egg.fatherId||'',
+    motherId: egg.motherId||'',
+    acquireDate: egg.expectedHatchDate? egg.expectedHatchDate.slice(0,7) : '',
+    weight: egg.eggWeight && egg.eggWeight<10 ? '' : '', // 蛋重不等於幼體出生體重，留空待實測
+    notes: `由蛋 ${egg.id} 孵化轉入｜產蛋日：${formatDate(egg.layDate)}`,
+    generation: gen
+  });
 }
 
 function openEditIndividual(id){
@@ -1276,7 +1351,16 @@ function saveNewIndividual(){
   if(w>0){
     DATA.weightLogs.push({id:`WL-${Date.now()}`,individualId:id,date:new Date().toISOString().split('T')[0],weight:w,appetite:'good',food:[],supplements:[],notes:'初始體重記錄'});
   }
+  // 若此個體由蛋孵化轉入，讓來源蛋退場，避免同一顆蛋重複轉出（蛋號已記於 notes 可反查）
+  let _retiredEgg=false;
+  if(_convertFromEggId){
+    const before=DATA.eggs.length;
+    DATA.eggs=DATA.eggs.filter(e=>e.id!==_convertFromEggId);
+    _retiredEgg=DATA.eggs.length!==before;
+    _convertFromEggId=null;
+  }
   saveData(); closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
+  if(_retiredEgg) renderKanban();
   toast(`✅ ${id} 已新增`);
 }
 
@@ -1428,13 +1512,17 @@ function renderKanban(){
       <div class="kanban-col-hdr">${s.label}<span class="cnt">${eggs.length}</span></div>
       ${eggs.length===0?'<div class="kanban-placeholder">拖曳蛋卡至此欄<br>或點擊「＋新增蛋」</div>':''}
       ${eggs.map(e=>`<div class="egg-card" draggable="true" ondragstart="dragEgg(event,'${e.id}')">
-        <div class="egg-id">${e.id}</div>
+        <div class="egg-id" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span>${e.id}</span>
+          <button onclick="event.stopPropagation();deleteEgg('${e.id}')" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.45);color:var(--red);border-radius:5px;width:20px;height:20px;font-size:12px;line-height:1;cursor:pointer;flex:none" title="刪除蛋紀錄">✕</button>
+        </div>
         <div class="egg-info">
           母：${e.motherId||'—'}<br>
           產蛋：${formatDate(e.layDate)}<br>
           預計破殼：<strong style="color:var(--accent2)">${formatDate(e.expectedHatchDate)}</strong><br>
           ${e.incubator?`孵化箱：${e.incubator}｜${e.incubTemp}°C`:''}
         </div>
+        ${s.id==='eating'?`<button class="btn btn-sm btn-green" style="width:100%;margin-top:6px" onclick="event.stopPropagation();convertEggToIndividual('${e.id}')">🐣 轉為正式個體</button>`:''}
         <div class="egg-stages">${EGG_STAGES.filter(st=>st.id!==s.id).map(st=>`<button class="egg-stage-btn" onclick="event.stopPropagation();moveEggTo('${e.id}','${st.id}')">${EGG_STAGE_SHORT[st.id]}</button>`).join('')}</div>
       </div>`).join('')}
     </div>`;
@@ -1451,6 +1539,19 @@ function dropEgg(ev,status){
 function moveEggTo(eggId,stageId){
   const egg=DATA.eggs.find(e=>e.id===eggId);
   if(egg){egg.status=stageId;saveData();renderKanban();toast('已移至：'+(EGG_STAGE_SHORT[stageId]||stageId));}
+}
+let _delEggConfirmId=null,_delEggConfirmTimer=null;
+function deleteEgg(eggId){
+  if(_delEggConfirmId===eggId){
+    clearTimeout(_delEggConfirmTimer); _delEggConfirmId=null;
+    DATA.eggs=DATA.eggs.filter(e=>e.id!==eggId);
+    saveData(); renderKanban();
+    toast('已刪除蛋 '+eggId);
+  } else {
+    _delEggConfirmId=eggId;
+    toast(`⚠️ 再按一次確認刪除蛋「${eggId}」`);
+    _delEggConfirmTimer=setTimeout(()=>{_delEggConfirmId=null;},3000);
+  }
 }
 function openAddEgg(){ populateLogSelects(); openModal('modalAddEgg'); calcHatch(); }
 function calcHatch(){
