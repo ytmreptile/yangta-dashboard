@@ -220,7 +220,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v2.9</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.0</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -1186,9 +1186,9 @@ function _resetAddEditModal(mode){
   const isEdit=mode==='edit';
   document.getElementById('modalAddIndTitle').textContent=isEdit?'編輯個體資料':'新增個體';
   document.getElementById('modalAddIndSaveBtn').textContent=isEdit?'儲存變更':'新增';
-  document.getElementById('newId').readOnly=isEdit;
-  document.getElementById('newId').style.opacity=isEdit?'.5':'1';
-  document.getElementById('newIdLabel').textContent=isEdit?'個體編號（不可修改）':'個體編號';
+  document.getElementById('newId').readOnly=false;
+  document.getElementById('newId').style.opacity='1';
+  document.getElementById('newIdLabel').textContent=isEdit?'個體編號（可修改，將自動更新關聯紀錄）':'個體編號';
   document.getElementById('newWeightLabel').textContent=isEdit?'基準體重（g）— 若已有日誌則以日誌最新值為準':'當前體重（g）';
 }
 
@@ -1296,7 +1296,8 @@ function openEditIndividual(id){
   if(!ind) return;
   _editIndividualId=id;
   _resetAddEditModal('edit');
-  document.getElementById('newId').value=ind.id;
+  const _idEl=document.getElementById('newId');
+  _idEl.value=ind.id; _idEl.dataset.val=ind.id;
   document.getElementById('newSpecies').value=ind.species||'amyae';
   document.getElementById('newSex').value=ind.sex||'F';
   document.getElementById('newDate').value=ind.acquireDate||'';
@@ -1364,10 +1365,35 @@ function saveNewIndividual(){
   toast(`✅ ${id} 已新增`);
 }
 
+// 改個體編號時，連動更新所有引用此編號的紀錄（父/母系、蛋、體重日誌）
+function renameIndividualId(oldId,newId){
+  DATA.individuals.forEach(i=>{
+    if(i.fatherId===oldId) i.fatherId=newId;
+    if(i.motherId===oldId) i.motherId=newId;
+  });
+  DATA.eggs.forEach(e=>{
+    if(e.fatherId===oldId) e.fatherId=newId;
+    if(e.motherId===oldId) e.motherId=newId;
+  });
+  DATA.weightLogs.forEach(l=>{
+    if(l.individualId===oldId) l.individualId=newId;
+  });
+}
+
 function saveEditIndividual(){
   const id=_editIndividualId;
   const ind=getIndividual(id);
   if(!ind){ toast('找不到個體'); return; }
+  // 個體編號變更處理（含性別確認後 U→M/F 改碼）
+  const idEl=document.getElementById('newId');
+  const newId=(idEl.dataset.val!==undefined&&idEl.dataset.val!==''?idEl.dataset.val:idEl.value).trim();
+  if(!newId){ toast('請輸入個體編號'); return; }
+  if(newId!==id){
+    if(DATA.individuals.find(i=>i.id===newId)){ toast('個體編號已存在'); return; }
+    ind.id=newId;
+    renameIndividualId(id,newId);
+    _editIndividualId=newId;
+  }
   ind.species=document.getElementById('newSpecies').value;
   ind.sex=document.getElementById('newSex').value;
   ind.acquireDate=document.getElementById('newDate').value;
@@ -1381,7 +1407,7 @@ function saveEditIndividual(){
   ind.notes=document.getElementById('newNotes').value;
   // weight: only update reference if no logs exist, or if user explicitly changed it
   const newW=parseFloat(document.getElementById('newWeight').value)||0;
-  const hasLogs=DATA.weightLogs.some(l=>l.individualId===id);
+  const hasLogs=DATA.weightLogs.some(l=>l.individualId===ind.id);
   if(!hasLogs && newW>0) ind.weight=newW;
   // photos
   ind.photos=[..._newPhotos];
@@ -1389,9 +1415,9 @@ function saveEditIndividual(){
   closeModal('modalAddInd');
   renderRegistry();
   updateHeaderStats();
-  showIndividual(id);
+  showIndividual(ind.id);
   _editIndividualId=null;
-  toast(`✅ ${id} 資料已更新`);
+  toast(`✅ ${ind.id} 資料已更新`);
 }
 
 // ═══════════════════════════════════════════
