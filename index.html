@@ -220,7 +220,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.1</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.2</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -1183,7 +1183,7 @@ let _editIndividualId=null;
 
 function _resetAddEditModal(mode){
   // mode: 'add' | 'edit'
-  _lastIndSaveTs=0; // 開窗即清除防重複時間戳，確保本次開窗的首次存檔不被擋
+  _lastIndSaveTs=0; _indSaveDone=false; // 開窗即清除防重複狀態，確保本次開窗的首次存檔不被擋
   const isEdit=mode==='edit';
   document.getElementById('modalAddIndTitle').textContent=isEdit?'編輯個體資料':'新增個體';
   document.getElementById('modalAddIndSaveBtn').textContent=isEdit?'儲存變更':'新增';
@@ -1317,10 +1317,13 @@ function openEditIndividual(id){
 }
 
 let _lastIndSaveTs=0;
+let _indSaveDone=false; // 本次開窗是否已成功存檔（成功後鎖死，防手機重複觸發撞號）
 function handleIndividualSave(){
-  // 手機防重複觸發：iOS 的 ghost click / 二次點擊會在 ~300ms 後再次觸發 onclick，
-  // 因第一次已把個體寫入 localStorage，第二次會誤報「個體編號已存在」。
-  // 用時間戳擋掉短時間內的重複呼叫（不依賴 button.disabled，因 finally 會即刻解鎖）。
+  // 手機防重複觸發的雙保險：
+  // (1) session 旗標 — 只要本次開窗已成功存過檔，之後不論隔多久、按幾次都直接關窗忽略。
+  //     這才是根治：不依賴時間窗，擋得住「以為沒反應而隔幾秒手動再按」與 iOS ghost click。
+  // (2) 時間戳 — 擋 <1200ms 的極快連點（ghost click）。
+  if(_indSaveDone){ closeModal('modalAddInd'); return; }
   const now=Date.now();
   if(now-_lastIndSaveTs<1200) return;
   _lastIndSaveTs=now;
@@ -1368,7 +1371,7 @@ function saveNewIndividual(){
     _retiredEgg=DATA.eggs.length!==before;
     _convertFromEggId=null;
   }
-  saveData(); closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
+  saveData(); _indSaveDone=true; closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
   if(_retiredEgg) renderKanban();
   toast(`✅ ${id} 已新增`);
 }
@@ -1420,6 +1423,7 @@ function saveEditIndividual(){
   // photos
   ind.photos=[..._newPhotos];
   saveData();
+  _indSaveDone=true;
   closeModal('modalAddInd');
   renderRegistry();
   updateHeaderStats();
@@ -1741,8 +1745,12 @@ function openModal(id){
 }
 function closeModal(id){
   const el=document.getElementById(id);
+  if(!el) return;
+  // iOS：先收起鍵盤（若焦點還在輸入框，Safari 會延遲 repaint 導致 modal 視覺殘留）
+  if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
   el.classList.remove('open');
   el.style.display='none'; // inline style forces immediate hide on iOS
+  void el.offsetHeight;    // 強制同步 reflow，逼 iOS 立刻重繪、確實關窗
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>{o.classList.remove('open');o.style.display='none';}); });
 
