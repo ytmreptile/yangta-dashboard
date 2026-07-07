@@ -220,10 +220,11 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.3</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.4</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
+      <button class="btn btn-sm btn-ghost" onclick="compressExistingPhotos()" title="壓縮所有既有照片，釋放儲存空間">🗜 壓縮照片</button>
     </div>
     <div class="hdr-stats" id="headerStats"></div>
   </div>
@@ -638,7 +639,74 @@ function loadData(){
     DATA = s? migrateData(JSON.parse(s)): defaultData();
   }catch(e){ DATA=defaultData(); }
 }
-function saveData(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA)); }
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA));
+    return true;
+  }catch(e){
+    // QuotaExceededError：手機 localStorage 上限約 5MB，多因照片(base64)過大塞爆
+    toast('❌ 儲存空間已滿！照片太多/太大。請按右上「🗜 壓縮照片」釋放空間，或刪掉幾張照片後再試');
+    return false;
+  }
+}
+// 將圖片檔壓縮成較小的 JPEG data URL（限制最大邊長 + 品質），大幅降低 localStorage 佔用
+function _compressImage(file,maxEdge,quality){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>maxEdge||h>maxEdge){
+          if(w>=h){ h=Math.round(h*maxEdge/w); w=maxEdge; }
+          else { w=Math.round(w*maxEdge/h); h=maxEdge; }
+        }
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(cv.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=reject; img.src=ev.target.result;
+    };
+    fr.onerror=reject; fr.readAsDataURL(file);
+  });
+}
+// 從既有的 data URL 重新壓縮（用於瘦身已存進 localStorage 的舊大圖）
+function _recompressDataUrl(dataUrl,maxEdge,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxEdge||h>maxEdge){
+        if(w>=h){ h=Math.round(h*maxEdge/w); w=maxEdge; }
+        else { w=Math.round(w*maxEdge/h); h=maxEdge; }
+      }
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(cv.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=reject; img.src=dataUrl;
+  });
+}
+// 一鍵壓縮所有既有照片，釋放 localStorage 空間
+async function compressExistingPhotos(){
+  const before=JSON.stringify(DATA).length;
+  let count=0;
+  for(const ind of (DATA.individuals||[])){
+    if(!Array.isArray(ind.photos)) continue;
+    for(let i=0;i<ind.photos.length;i++){
+      const p=ind.photos[i];
+      if(typeof p==='string' && p.indexOf('data:image')===0){
+        try{ const c=await _recompressDataUrl(p,1280,0.7); if(c && c.length<p.length){ ind.photos[i]=c; count++; } }catch(e){}
+      }
+    }
+  }
+  const after=JSON.stringify(DATA).length;
+  const saved=((before-after)/1048576).toFixed(2);
+  if(saveData()){
+    renderRegistry();
+    toast(`✅ 已壓縮 ${count} 張照片，釋放約 ${saved} MB（目前 ${(after/1048576).toFixed(2)} MB）`);
+  }
+}
 
 // ═══════════════════════════════════════════
 //  HELPERS
@@ -1095,16 +1163,18 @@ function triggerIndividualPhotoAdd(id){
 }
 function applyPhotoUpdate(input){
   if(!input.files[0]) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
+  _compressImage(input.files[0],1280,0.7).then(dataUrl=>{
     const ind=getIndividual(_photoUpdateTargetId);
     if(ind){
       if(!ind.photos) ind.photos=[];
-      if(ind.photos.length<5){ ind.photos.push(e.target.result); saveData(); renderRegistry(); showIndividual(_photoUpdateTargetId); toast('照片已新增'); }
+      if(ind.photos.length<5){
+        ind.photos.push(dataUrl);
+        if(saveData()){ renderRegistry(); showIndividual(_photoUpdateTargetId); toast('照片已新增'); }
+        else { ind.photos.pop(); } // 存檔失敗（空間滿）→ 回滾記憶體，保持一致
+      }
     }
     input.value='';
-  };
-  reader.readAsDataURL(input.files[0]);
+  }).catch(()=>{ toast('❌ 照片處理失敗'); input.value=''; });
 }
 let _photoRemoveKey=null,_photoRemoveTimer=null;
 function removeIndividualPhoto(id,index){
@@ -1145,12 +1215,11 @@ function addFormPhoto(){
 }
 function handleFormPhotoSelect(input){
   if(!input.files[0]) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    if(_newPhotos.length<5){ _newPhotos.push(e.target.result); renderFormPhotoSlots(); }
+  if(_newPhotos.length>=5){ toast('最多5張照片'); input.value=''; return; }
+  _compressImage(input.files[0],1280,0.7).then(dataUrl=>{
+    if(_newPhotos.length<5){ _newPhotos.push(dataUrl); renderFormPhotoSlots(); }
     input.value='';
-  };
-  reader.readAsDataURL(input.files[0]);
+  }).catch(()=>{ toast('❌ 照片處理失敗'); input.value=''; });
 }
 function removeFormPhoto(index){
   _newPhotos.splice(index,1);
@@ -1378,7 +1447,13 @@ function saveNewIndividual(){
     _retiredEgg=DATA.eggs.length!==before;
     _convertFromEggId=null;
   }
-  saveData(); _indSaveDone=true; closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
+  if(!saveData()){
+    // 存檔失敗（多為空間滿）：從 localStorage 重載，捨棄這次未存成的記憶體變更，
+    // 避免「記憶體有、localStorage 沒有」→ 下次按新增誤報「編號已存在」
+    loadData(); renderRegistry(); updateHeaderStats(); renderKanban();
+    return;
+  }
+  _indSaveDone=true; closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
   if(_retiredEgg) renderKanban();
   toast(`✅ ${id} 已新增`);
 }
@@ -1429,7 +1504,11 @@ function saveEditIndividual(){
   if(!hasLogs && newW>0) ind.weight=newW;
   // photos
   ind.photos=[..._newPhotos];
-  saveData();
+  if(!saveData()){
+    // 存檔失敗（多為空間滿）：從 localStorage 重載，捨棄這次未存成的編輯（含改碼），保持一致
+    loadData(); renderRegistry(); updateHeaderStats();
+    return;
+  }
   _indSaveDone=true;
   closeModal('modalAddInd');
   renderRegistry();
