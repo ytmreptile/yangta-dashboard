@@ -220,7 +220,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.4</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.5</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -897,15 +897,14 @@ function showIndividual(id){
 
   document.getElementById('modalIndTitle').textContent=`${ind.id} — ${speciesLabel[ind.species]}`;
   const photos=ind.photos||[];
+  // 照片區改唯讀顯示：增刪一律走「編輯個體資料」，避免與詳情頁入口互相覆蓋
   const photoSection=`<div style="margin-bottom:16px">
-    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">照片 ${photos.length} / 5</div>
+    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">照片 ${photos.length} / 5 <span style="text-transform:none;font-weight:500;letter-spacing:0;margin-left:6px;color:var(--muted)">· 增刪請至「編輯個體資料」</span></div>
     <div class="photo-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
       ${[0,1,2,3,4].map(i=>{
         if(photos[i]) return`<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--surface3)">
           <img src="${photos[i]}" style="width:100%;height:100%;object-fit:cover">
-          <button onclick="removeIndividualPhoto('${id}',${i})" style="position:absolute;top:3px;right:3px;background:rgba(239,68,68,.85);border:none;color:#fff;border-radius:4px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1">✕</button>
         </div>`;
-        if(photos.length<5) return`<div onclick="triggerIndividualPhotoAdd('${id}')" style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:22px;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+</div>`;
         return`<div style="border:2px dashed var(--border);border-radius:8px;aspect-ratio:1;opacity:.2"></div>`;
       }).join('')}
     </div>
