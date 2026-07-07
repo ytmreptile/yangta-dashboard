@@ -1183,6 +1183,7 @@ let _editIndividualId=null;
 
 function _resetAddEditModal(mode){
   // mode: 'add' | 'edit'
+  _lastIndSaveTs=0; // 開窗即清除防重複時間戳，確保本次開窗的首次存檔不被擋
   const isEdit=mode==='edit';
   document.getElementById('modalAddIndTitle').textContent=isEdit?'編輯個體資料':'新增個體';
   document.getElementById('modalAddIndSaveBtn').textContent=isEdit?'儲存變更':'新增';
@@ -1315,7 +1316,14 @@ function openEditIndividual(id){
   openModal('modalAddInd');
 }
 
+let _lastIndSaveTs=0;
 function handleIndividualSave(){
+  // 手機防重複觸發：iOS 的 ghost click / 二次點擊會在 ~300ms 後再次觸發 onclick，
+  // 因第一次已把個體寫入 localStorage，第二次會誤報「個體編號已存在」。
+  // 用時間戳擋掉短時間內的重複呼叫（不依賴 button.disabled，因 finally 會即刻解鎖）。
+  const now=Date.now();
+  if(now-_lastIndSaveTs<1200) return;
+  _lastIndSaveTs=now;
   const btn=document.getElementById('modalAddIndSaveBtn');
   if(btn&&btn.disabled) return;
   if(btn){btn.disabled=true;btn.style.opacity='.5';btn.textContent='...';}
