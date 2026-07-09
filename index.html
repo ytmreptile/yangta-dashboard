@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>陽台人｜飼養繁殖管理儀表板</title>
+<title>陽台人｜培育管理儀表板</title>
 <style>
 :root{
   --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--surface3:#2a2d40;
@@ -220,11 +220,10 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.6</span></small></div>
+    <div class="brand">陽台人 <small>培育管理儀表板 <span style="color:#666;font-size:10px">v3.7</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
-      <button class="btn btn-sm btn-ghost" onclick="compressExistingPhotos()" title="壓縮所有既有照片，釋放儲存空間">🗜 壓縮照片</button>
     </div>
     <div class="hdr-stats" id="headerStats"></div>
   </div>
@@ -736,44 +735,6 @@ function _compressImage(file,maxEdge,quality){
     fr.onerror=reject; fr.readAsDataURL(file);
   });
 }
-// 從既有的 data URL 重新壓縮（用於瘦身已存進 localStorage 的舊大圖）
-function _recompressDataUrl(dataUrl,maxEdge,quality){
-  return new Promise((resolve,reject)=>{
-    const img=new Image();
-    img.onload=()=>{
-      let w=img.width,h=img.height;
-      if(w>maxEdge||h>maxEdge){
-        if(w>=h){ h=Math.round(h*maxEdge/w); w=maxEdge; }
-        else { w=Math.round(w*maxEdge/h); h=maxEdge; }
-      }
-      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-      cv.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(cv.toDataURL('image/jpeg',quality));
-    };
-    img.onerror=reject; img.src=dataUrl;
-  });
-}
-// 一鍵壓縮所有既有照片，釋放 localStorage 空間
-async function compressExistingPhotos(){
-  const before=JSON.stringify(DATA).length;
-  let count=0;
-  for(const ind of (DATA.individuals||[])){
-    if(!Array.isArray(ind.photos)) continue;
-    for(let i=0;i<ind.photos.length;i++){
-      const p=ind.photos[i];
-      if(typeof p==='string' && p.indexOf('data:image')===0){
-        try{ const c=await _recompressDataUrl(p,1280,0.7); if(c && c.length<p.length){ ind.photos[i]=c; count++; } }catch(e){}
-      }
-    }
-  }
-  const after=JSON.stringify(DATA).length;
-  const saved=((before-after)/1048576).toFixed(2);
-  if(saveData()){
-    renderRegistry();
-    toast(`✅ 已壓縮 ${count} 張照片，釋放約 ${saved} MB（目前 ${(after/1048576).toFixed(2)} MB）`);
-  }
-}
-
 // ═══════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════
