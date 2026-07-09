@@ -220,7 +220,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.5</span></small></div>
+    <div class="brand">陽台人 <small>Nephrurus amyae · 飼養繁殖管理儀表板 <span style="color:#666;font-size:10px">v3.6</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -633,21 +633,87 @@ function migrateData(data){
   });
   return data;
 }
-function loadData(){
+// ═══════════════════════════════════════════
+//  IndexedDB 照片倉庫（大容量，解決 localStorage 5MB 塞爆問題）
+//  設計：文字資料仍存 localStorage（極小、不會爆）；照片(base64)改存 IndexedDB。
+//        記憶體中的 DATA 永遠帶著照片 → 所有畫面渲染邏輯完全不用改。
+// ═══════════════════════════════════════════
+const IDB_NAME='yangta_db', IDB_STORE='photos', IDB_VER=1;
+let _idb=null;
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    if(_idb) return resolve(_idb);
+    if(!('indexedDB' in window)) return reject(new Error('此瀏覽器不支援 IndexedDB'));
+    const req=indexedDB.open(IDB_NAME,IDB_VER);
+    req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE); };
+    req.onsuccess=e=>{ _idb=e.target.result; resolve(_idb); };
+    req.onerror=e=>reject(e.target.error||new Error('IndexedDB 開啟失敗'));
+  });
+}
+// 讀出所有個體的照片：回傳 { 個體id: [dataUrl,...] }
+function idbGetAllPhotos(){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const store=tx.objectStore(IDB_STORE);
+    const out={};
+    const req=store.openCursor();
+    req.onsuccess=e=>{ const cur=e.target.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else resolve(out); };
+    req.onerror=e=>reject(e.target.error||new Error('IndexedDB 讀取失敗'));
+  }));
+}
+// 依目前記憶體 DATA 重寫照片倉庫（含清除已刪除個體的照片），保持一致
+function persistPhotos(){
+  return idbOpen().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    const store=tx.objectStore(IDB_STORE);
+    const keep=new Set();
+    (DATA.individuals||[]).forEach(ind=>{
+      keep.add(ind.id);
+      store.put(Array.isArray(ind.photos)?ind.photos:[], ind.id);
+    });
+    const cur=store.openCursor();
+    cur.onsuccess=e=>{ const c=e.target.result; if(c){ if(!keep.has(c.key)) store.delete(c.key); c.continue(); } };
+    tx.oncomplete=()=>resolve();
+    tx.onerror=e=>reject(e.target.error||new Error('IndexedDB 寫入失敗'));
+  }));
+}
+// 產生「不含照片」的輕量副本供 localStorage 存放（不深拷貝 base64，省記憶體）
+function stripPhotos(data){
+  return Object.assign({}, data, {
+    individuals:(data.individuals||[]).map(ind=>{ const c=Object.assign({},ind); delete c.photos; delete c.photo; return c; })
+  });
+}
+async function loadData(){
   try{
     const s=localStorage.getItem(STORAGE_KEY);
     DATA = s? migrateData(JSON.parse(s)): defaultData();
   }catch(e){ DATA=defaultData(); }
+  // 一次性搬移：舊版把照片藏在 localStorage JSON 裡 → 搬進 IndexedDB 並把 localStorage 瘦身
+  const hasInlinePhotos=(DATA.individuals||[]).some(ind=>Array.isArray(ind.photos)&&ind.photos.length);
+  if(hasInlinePhotos){
+    try{
+      await persistPhotos();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stripPhotos(DATA)));
+    }catch(e){ console.error('照片搬移至 IndexedDB 失敗',e); }
+  }else{
+    // 新版格式：從 IndexedDB 讀回照片，掛回記憶體供畫面顯示
+    try{
+      const map=await idbGetAllPhotos();
+      (DATA.individuals||[]).forEach(ind=>{ ind.photos = map[ind.id] || (Array.isArray(ind.photos)?ind.photos:[]); });
+    }catch(e){ console.error('自 IndexedDB 讀取照片失敗',e); }
+  }
 }
 function saveData(){
+  // 文字資料存 localStorage（極小，不含照片，實質不會再爆）
   try{
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA));
-    return true;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stripPhotos(DATA)));
   }catch(e){
-    // QuotaExceededError：手機 localStorage 上限約 5MB，多因照片(base64)過大塞爆
-    toast('❌ 儲存空間已滿！照片太多/太大。請按右上「🗜 壓縮照片」釋放空間，或刪掉幾張照片後再試');
+    toast('❌ 文字資料儲存失敗（儲存空間異常）');
     return false;
   }
+  // 照片存進大容量 IndexedDB（非同步；失敗才提示，不阻塞畫面）
+  persistPhotos().catch(e=>{ console.error(e); toast('⚠️ 照片儲存失敗：'+((e&&e.name)||e)); });
+  return true;
 }
 // 將圖片檔壓縮成較小的 JPEG data URL（限制最大邊長 + 品質），大幅降低 localStorage 佔用
 function _compressImage(file,maxEdge,quality){
@@ -1447,9 +1513,9 @@ function saveNewIndividual(){
     _convertFromEggId=null;
   }
   if(!saveData()){
-    // 存檔失敗（多為空間滿）：從 localStorage 重載，捨棄這次未存成的記憶體變更，
-    // 避免「記憶體有、localStorage 沒有」→ 下次按新增誤報「編號已存在」
-    loadData(); renderRegistry(); updateHeaderStats(); renderKanban();
+    // 存檔失敗：從儲存重載，捨棄這次未存成的記憶體變更，
+    // 避免「記憶體有、儲存沒有」→ 下次按新增誤報「編號已存在」
+    loadData().then(()=>{ renderRegistry(); updateHeaderStats(); renderKanban(); });
     return;
   }
   _indSaveDone=true; closeModal('modalAddInd'); renderRegistry(); updateHeaderStats();
@@ -1504,8 +1570,8 @@ function saveEditIndividual(){
   // photos
   ind.photos=[..._newPhotos];
   if(!saveData()){
-    // 存檔失敗（多為空間滿）：從 localStorage 重載，捨棄這次未存成的編輯（含改碼），保持一致
-    loadData(); renderRegistry(); updateHeaderStats();
+    // 存檔失敗：從儲存重載，捨棄這次未存成的編輯（含改碼），保持一致
+    loadData().then(()=>{ renderRegistry(); updateHeaderStats(); });
     return;
   }
   _indSaveDone=true;
@@ -1887,9 +1953,10 @@ function importData(input){
 // ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
-loadData();
-updateHeaderStats();
-renderRegistry();
+loadData().then(()=>{
+  updateHeaderStats();
+  renderRegistry();
+});
 
 </script>
 </body>
