@@ -869,7 +869,7 @@ function renderGallery(list){
       <div class="card-body">
         <div class="card-id">${ind.id}</div>
         <div class="card-weight">${w}<small> g</small></div>
-        <div class="progress-marks"><span style="position:absolute;left:${floorPct}%;transform:translateX(-50%);font-size:9px;color:var(--yellow)">${cfg.floor}g</span><span style="position:absolute;right:0;font-size:9px;color:var(--green)">${cfg.target}g</span></div>
+        <div class="progress-marks"><span style="position:absolute;right:0;font-size:9px;white-space:nowrap;line-height:8px"><span style="color:var(--yellow)">下限${cfg.floor}</span><span style="color:var(--muted)"> · </span><span style="color:var(--green)">門檻${cfg.target}g</span></span></div>
         <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${col}"></div>
           <div style="position:absolute;top:0;bottom:0;left:${floorPct}%;width:1px;background:rgba(245,158,11,.5)"></div>
         </div>
