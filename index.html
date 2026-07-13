@@ -394,51 +394,20 @@ button:active{opacity:.75}
     <div class="weight-ladder" id="weightLadder"></div>
   </div>
 
-  <!-- 繁殖流程 4 階段 -->
+  <!-- 逐月繁殖排程 -->
   <div class="goal-card">
-    <h4>🗓️ 繁殖流程（4 階段，可重複循環）</h4>
-    <div style="position:relative;padding-left:4px;margin-top:6px">
-      <div style="position:absolute;left:6px;top:12px;bottom:14px;width:2px;background:var(--border)"></div>
-      <div style="position:relative;padding:2px 0 16px 22px">
-        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--accent2);border:2px solid var(--bg)"></div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 1 · 配對前 6+ 個月</div>
-        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">建檔與增重期</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
-          <li>每月為每隻秤重、量 SVL（吻肛長），記錄 knob 尾飽滿度與蛻皮狀況</li>
-          <li>用自家 32 隻族群建立 amyae 專屬生長基準（業界罕有專門生長曲線）</li>
-          <li>目標：母體體重穩定爬升、接近成體體型（SVL 約 12cm 以上）</li>
-        </ul>
-      </div>
-      <div style="position:relative;padding:2px 0 16px 22px">
-        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid var(--bg)"></div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 2 · 配對前（硬門檻）</div>
-        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">篩選配對名單</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
-          <li>逐隻核對下方「配對前檢查清單」，母體/公體全部 ✅ 才列入本季</li>
-          <li>發育不均、體重或 knob 不達標者延到下一季，不勉強配對</li>
-          <li>秤重時複核每隻尾基部半陰莖膨大特徵，確認性別判定</li>
-        </ul>
-      </div>
-      <div style="position:relative;padding:2px 0 16px 22px">
-        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)"></div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 3 · 配對前 約 3 個月起</div>
-        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">冷卻 → 回溫 → 強化</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
-          <li><b style="color:var(--text)">冷卻期</b>：2–2.5 個月、17–18°C、光照縮至 10 小時（必要條件，不可略過）</li>
-          <li><b style="color:var(--text)">回溫</b>：平順升至 26–28°C、光照延長至 14 小時</li>
-          <li><b style="color:var(--text)">強化期</b>：回溫後大幅增加餵食，每餐補鈣＋ gut-load 昆蟲，把 knob 尾與體重推到最佳，準備配對</li>
-        </ul>
-      </div>
-      <div style="position:relative;padding:2px 0 2px 22px">
-        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)"></div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 4 · 繁殖季</div>
-        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">配對 → 產卵 → 產後監測</div>
-        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
-          <li>確認母體出現「接受行為」（抬尾順從、不逃避攻擊）才配對</li>
-          <li>每窩產後為母體秤重；每季每母體上限 <b style="color:var(--text)">3 窩</b>（保守，保護長期種源）</li>
-          <li>體重跌破 45g 或體況明顯下降 → 當季停止、分開公母</li>
-        </ul>
-      </div>
+    <h4>🗓️ 逐月繁殖排程（2026/7 → 2027/12，桃園室內）</h4>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin:-4px 0 12px">
+      關鍵路徑＝母體體重：<b style="color:var(--text)">只有 11 月底達 ≥50g 且健康的母體</b>才進入 12 月冷卻與 2027/3 配對；33–35g 邊際母體本季不參賽、續養至 2028。<br>
+      台灣情境最大風險不是低溫，而是<b style="color:var(--text)">濕度（全年 77–83%）與颱風停電</b>——除濕機／UPS／溫濕度監控的優先級高於部分加溫燈光。
+    </div>
+    <div id="breedSchedule"></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:4px"></span>階段一 增重備戰</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--blue);margin-right:4px"></span>階段二 冷卻</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--purple);margin-right:4px"></span>階段三 配對產卵</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--yellow);margin-right:4px"></span>階段四 孵化育幼出貨</span>
+      <span>🚩 = 關鍵決策節點</span>
     </div>
   </div>
 
@@ -1829,7 +1798,50 @@ function saveNewEgg(){
 // ═══════════════════════════════════════════
 function renderBusiness(){
   renderWeightLadder();
+  renderSchedule();
   renderChecklists();
+}
+// 逐月繁殖排程（依《桃園室內繁殖 2026–2027 逐月排程與氣候適配總表》）
+const SCHEDULE=[
+  {ym:'2026 · 7月',phase:1,title:'建立基線與增重啟動',ops:'全群秤重建檔、啟動集中增重。日熱點 30–32°C／涼區 24–26°C／夜 20–23°C、光照 12h、濕度目標 40–50%；母體每週 3–4 次少量多餐、每餐補鈣、每週綜合維他命、餌料 gut-load。設定「至 11 月需增重克數」目標。',climate:'颱風季開始、高溫高濕，留意停電。',watch:'一次投餵過多致緊迫拒食；餌料未 gut-load 造成鈣磷失衡。'},
+  {ym:'2026 · 8月',phase:1,title:'增重高峰＋颱風防護',ops:'維持增重曲線、密切監測月增幅；除濕機全開維持房間 ≤55%（8 月最濕，約 244mm／濕度 82.7%）。做颱風季應變演練，識別「增重停滯」個體查健康／寄生蟲。',watch:'颱風來襲前未備妥備援電力與飲水。'},
+  {ym:'2026 · 9月',phase:1,title:'設備採購落地＋期中體重關卡',gate:'期中體重',ops:'執行約 70,000 元設備採購（優先：孵化器＋孵化器 UPS＋斷電警報＋房間級除濕機＋多點溫濕度記錄器）。期中體重評估：估算 11 月底可達 ≥50g 母數、初判首季規模。',watch:'把預算全押孵化器與燈光、忽略除濕機／UPS／監控——台灣情境下這三者才是成敗關鍵。'},
+  {ym:'2026 · 10月',phase:1,title:'增重收尾＋健康總檢',ops:'最後衝刺增重；安排糞檢與體況評估。列「候選冷卻名單」＋公體配對名單（≥30g）。天氣轉乾（雨日最少）。',watch:'帶病或帶寄生蟲個體進入冷卻——免疫下降會使潛在感染爆發。'},
+  {ym:'2026 · 11月',phase:2,title:'GO/NO-GO 決策＋冷卻前置',gate:'GO/NO-GO',ops:'月初最終秤重：≥50g 且健康＝入選，<50g 或體況不佳＝退出本季續養。名單確定後停食 1–2 週淨空腸道；光照由 12h 每日漸縮、2 週內降至 10h；日熱點逐步下調。',climate:'東北季風增強、氣溫下滑，利於後續降溫。',watch:'體重「差一點」就放行；驟降溫或驟停食。'},
+  {ym:'2026 · 12月',phase:2,title:'冷卻期開始（第 1 個月）',ops:'關主加溫、以空調＋環境低溫維持 15–18°C；光照 10h、不餵食（<18°C 無法消化）、每週輕噴 1–2 次供飲；房間濕度壓至 30–40%。放置溫濕度記錄器（datalogger）。每週秤重，下降 >10% 立即中止並就醫。',watch:'除濕機發熱與降溫設備互相打架致溫度忽高忽低；密閉不通風致 CO₂／黴菌累積。'},
+  {ym:'2027 · 1月',phase:2,title:'冷卻期（第 2 個月，最冷月）',ops:'延續 15–18°C、10h 光照、不餵食、輕噴供飲。1 月最冷（夜約 12–13°C）自然低溫最有利，但防寒流跌破 15°C 太多，必要時空調微加溫托底。週秤重（<10% 規則）。',watch:'忽略呼吸道早期徵兆（張口呼吸／鼻涕／氣泡＝立即升溫就醫）；濕度回升未察覺。'},
+  {ym:'2027 · 2月',phase:2,title:'結束冷卻＋回溫',gate:'回溫後配對資格',ops:'約 2 月中（累積 2–2.5 個月）漸進升溫，一週內回到日熱點 26–28°C、光照延長至 14h；回溫後大量餵食＋每次補鈣，母體開始「充能」。確認恢復進食、活力、體重回穩才列入 3 月配對。',watch:'回溫太快或立即配對——應先「重餵約 1 個月」再配對；未恢復者延後或退出。'},
+  {ym:'2027 · 3月',phase:3,title:'首次配對（輪流合籠）',ops:'公體輪流移入各單獨母體箱短暫合籠、觀察交配後分開（避免群養與雄性打鬥）。母體每次補鈣、箱內常備一小皿純鈣（無 D3）供自由取食。日間 26–28°C、14h 光照。記錄每組配對日期。',climate:'3 月偏涼、濕度中等，適合作業。',watch:'合籠時間過長致緊迫或咬傷；未記錄配對日程（產卵窗約交配後 1 個月）。'},
+  {ym:'2027 · 4月',phase:3,title:'配對輪替＋首批母體抱卵',ops:'持續公母輪替提高受精率；設產卵箱（微濕沙／沙+黏土，供挖掘埋卵 30–100mm 深）；孵化器預熱至 27–28°C 待命。透過腹部可見白色蛋殼判斷抱卵、標記預估產期。',watch:'產卵基質過濕（濕沙可快速殺死卵）或過乾（母體不願產）。'},
+  {ym:'2027 · 5月',phase:3,title:'產卵高峰＋孵化啟動＋梅雨',ops:'產後盡快收卵、勿翻轉，嵌入濕水苔（乾苔:水約 1:10）密封容器置 27–28°C，不開孔、每 1–2 週 burping 換氣。梅雨季房間除濕維持 ≤55% 防結露。每窩記錄產期／蛋數／母體（孵化窗約 +80–100 天）。',watch:'延遲收卵；孵化容器外壁結露黴變未處理。'},
+  {ym:'2027 · 6月',phase:3,title:'產卵續行＋孵化中',gate:'母體保全',ops:'母體可能續產第 2 窩（間隔 27–69 天）；持續補鈣防低血鈣／難產。6 月雨量高（約 271mm）維持除濕。監測母體體重與鈣況（口腔鈣囊）。',watch:'抱卵 >30 天未產＝疑似卡蛋就醫；勿讓母體無限產窩耗盡鈣質——首季「見好就收」保母體優先。'},
+  {ym:'2027 · 7月',phase:4,title:'首批幼體孵化＋颱風季 UPS 上線',gate:'停電應變',ops:'早期產的卵開始孵化；幼體移入單獨小盒（通風、熱點 32°C、乾燥梯度），約 10–14 天開食、每 2 次補鈣。颱風季啟動：孵化器接 UPS、備保麗龍箱／毛毯／暖暖包（隔布外置勿觸卵）＋逆變器方案。記錄孵化率（SOP KPI）。',watch:'颱風前未備援；幼體盒悶濕致病。'},
+  {ym:'2027 · 8月',phase:4,title:'孵化高峰＋颱風高峰',ops:'孵化與育幼並行；8 月最濕（約 244mm／濕度 82.7%）＋颱風最盛，除濕與備電同時拉滿。幼體單獨飼養、少量多餐、勿過餌。監測開食率／存活率／體重曲線。',watch:'高濕致幼體呼吸道／蛻皮問題；一盒多隻造成緊迫。'},
+  {ym:'2027 · 9月',phase:4,title:'晚批孵化＋母體恢復期',ops:'末批卵孵化；母體停止配對後進入恢復——大量補餵、補鈣、恢復體重（可謹慎少量提供高營養餌）。9 月仍有颱風維持防護。母體健康總檢。',watch:'忽略母體恢復，影響 2028 續繁殖。'},
+  {ym:'2027 · 10月',phase:4,title:'幼體成長＋品牌與現金流啟動',ops:'幼體每 2 天餵、每 2 次補鈣（前 5–6 個月），之後降為每週補鈣一次；天氣轉乾利於育幼。整理本季孵化率／存活率數據，形成 SOP v1，規劃國內出售批次。',watch:'SOP 未即時記錄，錯失改良依據。'},
+  {ym:'2027 · 11月',phase:4,title:'幼體育成＋第二年冷卻名單前置',gate:'第二年名單',ops:'對 2028 打算繁殖的母體（含今年 33–35g 已長大者、已產後恢復者）做體重 GO/NO-GO，準備 12 月起第二輪冷卻。',watch:'期待用溫度「調性別」——本物種為基因決定性別（GSD），比例天生約 1:1，不可行。'},
+  {ym:'2027 · 12月',phase:4,title:'首批 F1 出貨＋年度復盤＋啟動第二輪冷卻',ops:'達標 F1 進入國內市場（現金流＋品牌）；復盤孵化率／存活率／母體恢復；符合條件之第二年母體開始冷卻（重演 12 月流程），為 2028 春配對鋪路。',watch:'只顧出貨、未把第二輪冷卻名單準備好，導致 2028 斷檔。'}
+];
+function renderSchedule(){
+  const el=document.getElementById('breedSchedule'); if(!el) return;
+  const phases={1:{name:'增重與備戰',color:'var(--green)'},2:{name:'冷卻',color:'var(--blue)'},3:{name:'配對與產卵',color:'var(--purple)'},4:{name:'孵化育幼與出貨',color:'var(--yellow)'}};
+  let html='<div style="position:relative"><div style="position:absolute;left:5px;top:10px;bottom:10px;width:2px;background:var(--border)"></div>';
+  let cur=null;
+  SCHEDULE.forEach(m=>{
+    const p=phases[m.phase];
+    if(m.phase!==cur){ cur=m.phase; html+=`<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:${p.color};padding:10px 0 6px 20px">階段 ${m.phase} · ${p.name}</div>`; }
+    html+=`<div style="position:relative;padding:0 0 13px 20px">
+      <div style="position:absolute;left:0;top:4px;width:12px;height:12px;border-radius:50%;background:${p.color};border:2px solid var(--bg)"></div>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--muted);font-weight:700">${m.ym}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${m.title}${m.gate?` <span style="font-size:10px;font-weight:700;color:var(--red);background:rgba(239,68,68,.12);padding:1px 6px;border-radius:8px;white-space:nowrap">🚩 ${m.gate}</span>`:''}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:3px">${m.ops}</div>
+      ${m.climate?`<div style="font-size:11px;color:var(--blue);line-height:1.5;margin-top:2px">🌦 ${m.climate}</div>`:''}
+      <div style="font-size:11.5px;color:var(--yellow);line-height:1.55;margin-top:3px">⚠ 注意：${m.watch}</div>
+    </div>`;
+  });
+  el.innerHTML=html+'</div>';
 }
 // 打勾／取消（僅視覺，切換分頁保留、重新整理歸零）
 function toggleChk(el){
