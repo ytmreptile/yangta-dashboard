@@ -218,7 +218,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>培育管理儀表板 <span style="color:#666;font-size:10px">v3.8</span></small></div>
+    <div class="brand">陽台人 <small>培育管理儀表板 <span style="color:#666;font-size:10px">v3.9</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -229,7 +229,7 @@ button:active{opacity:.75}
     <button class="tab-btn active" onclick="switchTab('registry')">📋 個體履歷</button>
     <button class="tab-btn" onclick="switchTab('logs')">📊 培育日誌</button>
     <button class="tab-btn" onclick="switchTab('hatch')">🥚 孵化看板</button>
-    <button class="tab-btn" onclick="switchTab('business')">📈 商業目標</button>
+    <button class="tab-btn" onclick="switchTab('business')">📅 繁殖計畫</button>
   </div>
 </div>
 
@@ -380,7 +380,7 @@ button:active{opacity:.75}
   </div>
 </div>
 
-<!-- TAB 4: 商業目標 -->
+<!-- TAB 4: 繁殖計畫 -->
 <div id="page-business" class="page">
   <!-- Weight progress to target -->
   <div class="goal-card">
@@ -394,44 +394,98 @@ button:active{opacity:.75}
     <div class="weight-ladder" id="weightLadder"></div>
   </div>
 
-  <!-- Scenario projections -->
+  <!-- 繁殖流程 4 階段 -->
   <div class="goal-card">
-    <h4>💰 三情境財務預測</h4>
-    <div class="scenario-grid">
-      <div class="scenario-card a">
-        <div class="s-label" style="color:var(--green)">情境A｜2026年9月配對</div>
-        <div class="s-title">部分個體達標（如體重衝過50g）</div>
-        <div class="s-val" style="color:var(--green)" id="projA">—</div>
-        <div class="s-sub">預計年淨利（2027）</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：2027 Q2（4–6月）<br>規模：5–8 隻</div>
+    <h4>🗓️ 繁殖流程（4 階段，可重複循環）</h4>
+    <div style="position:relative;padding-left:4px;margin-top:6px">
+      <div style="position:absolute;left:6px;top:12px;bottom:14px;width:2px;background:var(--border)"></div>
+      <div style="position:relative;padding:2px 0 16px 22px">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--accent2);border:2px solid var(--bg)"></div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 1 · 配對前 6+ 個月</div>
+        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">建檔與增重期</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
+          <li>每月為每隻秤重、量 SVL（吻肛長），記錄 knob 尾飽滿度與蛻皮狀況</li>
+          <li>用自家 32 隻族群建立 amyae 專屬生長基準（業界罕有專門生長曲線）</li>
+          <li>目標：母體體重穩定爬升、接近成體體型（SVL 約 12cm 以上）</li>
+        </ul>
       </div>
-      <div class="scenario-card b">
-        <div class="s-label" style="color:var(--blue)">情境B｜2027年3月配對</div>
-        <div class="s-title">標準週期（當前確認路線）</div>
-        <div class="s-val" style="color:var(--blue)" id="projB">—</div>
-        <div class="s-sub">預計年淨利（2027）</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：2027 Q4（11–12月）<br>規模：12–18 隻</div>
+      <div style="position:relative;padding:2px 0 16px 22px">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid var(--bg)"></div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 2 · 配對前（硬門檻）</div>
+        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">篩選配對名單</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
+          <li>逐隻核對下方「配對前檢查清單」，母體/公體全部 ✅ 才列入本季</li>
+          <li>發育不均、體重或 knob 不達標者延到下一季，不勉強配對</li>
+          <li>秤重時複核每隻尾基部半陰莖膨大特徵，確認性別判定</li>
+        </ul>
       </div>
-      <div class="scenario-card c">
-        <div class="s-label" style="color:var(--yellow)">混合策略｜A+B 雙波</div>
-        <div class="s-title">最佳資金流管理</div>
-        <div class="s-val" style="color:var(--yellow)" id="projC">—</div>
-        <div class="s-sub">預計年淨利（2027）</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">首售：Q2 + Q4 雙批<br>副業超主業目標：2027底</div>
+      <div style="position:relative;padding:2px 0 16px 22px">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)"></div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 3 · 配對前 4–6 週起</div>
+        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">強化 → 冷卻 → 回溫</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
+          <li><b style="color:var(--text)">強化期</b>：候選母體加強餵食，每餐補鈣＋ gut-load 昆蟲，把 knob 尾與體重推到最佳</li>
+          <li><b style="color:var(--text)">冷卻期</b>：2–2.5 個月、17–18°C、光照縮至 10 小時（必要條件，不可略過）</li>
+          <li><b style="color:var(--text)">回溫</b>：平順升至 26–28°C、光照延長至 14 小時，並大幅增加餵食</li>
+        </ul>
+      </div>
+      <div style="position:relative;padding:2px 0 2px 22px">
+        <div style="position:absolute;left:0;top:6px;width:14px;height:14px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)"></div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px">階段 4 · 繁殖季</div>
+        <div style="font-size:14px;font-weight:700;margin:2px 0 5px">配對 → 產卵 → 產後監測</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.75">
+          <li>確認母體出現「接受行為」（抬尾順從、不逃避攻擊）才配對</li>
+          <li>每窩產後為母體秤重；每季每母體上限 <b style="color:var(--text)">3 窩</b>（保守，保護長期種源）</li>
+          <li>體重跌破 45g 或體況明顯下降 → 當季停止、分開公母</li>
+        </ul>
       </div>
     </div>
   </div>
 
-  <!-- Timeline to income goal -->
+  <!-- 配對前檢查清單 -->
   <div class="goal-card">
-    <h4>🎯 副業超主業路徑（目標：月收入 NT$69,000 / 2028年6月前）</h4>
-    <div id="incomeTimeline" style="margin-top:4px"></div>
+    <h4>📋 配對前檢查清單（全部 ✅ 才列入配對名單）</h4>
+    <div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">點擊項目可打勾／取消，逐隻核對用；此為 SOP 參考模板（重新整理頁面後歸零）。</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px">♀ 母體</div>
+        <div id="chkMother"></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">♂ 公體</div>
+        <div id="chkMale"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Key actions now -->
+  <!-- 季中／後監測 -->
   <div class="goal-card">
-    <h4>✅ 2026 下半年關鍵行動清單</h4>
-    <div id="actionList"></div>
+    <h4>🔁 繁殖季中／後監測（持續）</h4>
+    <div id="chkMonitor"></div>
+  </div>
+
+  <!-- 風險與注意事項 -->
+  <div class="goal-card">
+    <h4>⚠️ 關鍵風險與注意事項</h4>
+    <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.85">
+      <li><b style="color:var(--text)">體重過輕就繁殖</b>：主要風險是卵阻塞（難產）、鈣質耗竭、產後衰竭甚至死亡；母體太輕會從骨骼抽鈣導致代謝性骨病（MBD）。</li>
+      <li><b style="color:var(--text)">過胖同樣危險</b>：肥胖也會導致卵阻塞；目標是「豐滿但非肥胖」，knob 尾飽滿是最實用的目視指標。</li>
+      <li><b style="color:var(--text)">多產致死風險</b>：Nephrurus 屬「不加控制會把自己產卵至死」→ 嚴格控制每季窩數、季末分開公母。</li>
+      <li><b style="color:var(--text)">不建議第一年就繁殖</b>：會對母體造成極大壓力並縮短壽命。</li>
+      <li><b style="color:var(--text)">自適應門檻</b>：若首季出現卵阻塞或產後衰竭 → 母體下限上調至 55g、延長休息週期；母體停滯 45–50g 且已滿 18 月 → 列「觀察組」僅安排 1 窩。</li>
+    </ul>
+  </div>
+
+  <!-- 門檻依據 -->
+  <div class="goal-card" style="background:var(--surface2)">
+    <h4>📖 門檻依據（研究摘要）</h4>
+    <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.85">
+      <li>45g／18 個月門檻源自 Moniz &amp; Wong 的 amyae 專門 care sheet 與法國 reptilus-project；本儀表板<b style="color:var(--text)">保守採 50g</b>以保護長期繁殖壽命。</li>
+      <li>公體門檻較低（≥12 個月、30–40g）屬正常性別二型性——公體較小、不需承擔產卵鈣與能量消耗。</li>
+      <li>N. amyae 為 Nephrurus 屬<b style="color:var(--text)">最大型</b>物種（成體 50–60g，最高逾 61g），<b style="color:var(--text)">不可</b>套用 N. levis／wheeleri（14–25g）等小型種「20g 可繁殖」的說法。</li>
+      <li>amyae 專門生長曲線與第一手難產案例文獻稀少，部分結論依屬內通則推估；請以自家族群每月秤重紀錄為準。</li>
+      <li style="color:#777">出處：《Nephrurus amyae 棘皮瘤尾守宮繁殖成熟判準：體重、年齡與體況門檻研究》</li>
+    </ul>
   </div>
 </div>
 
@@ -1775,9 +1829,25 @@ function saveNewEgg(){
 // ═══════════════════════════════════════════
 function renderBusiness(){
   renderWeightLadder();
-  renderProjections();
-  renderTimeline();
-  renderActionList();
+  renderChecklists();
+}
+// 打勾／取消（僅視覺，切換分頁保留、重新整理歸零）
+function toggleChk(el){
+  const on=el.getAttribute('data-on')==='1';
+  el.setAttribute('data-on',on?'0':'1');
+  const box=el.querySelector('.chk-box'), txt=el.querySelector('.chk-txt');
+  if(box){ box.textContent=on?'☐':'☑'; box.style.color=on?'var(--muted)':'var(--green)'; }
+  if(txt){ txt.style.textDecoration=on?'none':'line-through'; txt.style.opacity=on?'1':'.5'; }
+}
+function _chkRows(items){
+  return items.map(t=>`<div data-on="0" onclick="toggleChk(this)" style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;cursor:pointer;user-select:none"><span class="chk-box" style="color:var(--muted);font-size:15px;line-height:1.3">☐</span><span class="chk-txt" style="font-size:13px;line-height:1.45">${t}</span></div>`).join('');
+}
+function renderChecklists(){
+  const mo=document.getElementById('chkMother');
+  if(!mo||mo.children.length) return; // 只建一次，保留已勾選狀態
+  mo.innerHTML=_chkRows(['年齡 ≥18 個月','體重 ≥50g（絕對下限 45g；低於 45g 一律不配）','SVL 接近 12cm 以上、體型接近成體','knob 尾飽滿圓潤（非細瘦扁塌）','連續 2–3 個月體重穩定或上升','無蛻皮不全、無健康異常','已完成 2–2.5 個月冷卻並回溫','配對前 4–6 週已加強餵食＋補鈣','對公體表現接受行為（不逃避、不攻擊、不豎尾拒絕）']);
+  document.getElementById('chkMale').innerHTML=_chkRows(['年齡 ≥12 個月','體重 ≥35–40g','尾基部半陰莖膨大明顯','健康活躍、進食正常']);
+  document.getElementById('chkMonitor').innerHTML=_chkRows(['每週為繁殖母體秤重、追蹤體況','每季每母體上限 3 窩','產後體重跌破 45g → 當季停止、分開公母','產後 6–8 週未回復體重 → 退出下一季','出現卵阻塞徵兆（腹脹、不停挖掘卻不產、精神萎靡、拒食）→ 立即就醫並全群檢討門檻']);
 }
 function renderWeightLadder(){
   const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
@@ -1804,64 +1874,6 @@ function renderWeightLadder(){
     </div>`;
   }).join('');
   document.getElementById('weightLadder').innerHTML=ladder;
-}
-function renderProjections(){
-  const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
-  const readyNow=females.filter(i=>(latestWeight(i.id)||i.weight)>=50).length;
-  const readyBy2027=females.filter(i=>{
-    const w=latestWeight(i.id)||i.weight;
-    const eta=etaMonths(w,50);
-    return eta<=9; // by March 2027
-  }).length;
-  const fmtNT=n=>`NT$${n.toLocaleString()}`;
-  document.getElementById('projA').textContent=fmtNT(readyNow*2*1.2*15000 || 80000);
-  document.getElementById('projB').textContent=fmtNT(Math.round(readyBy2027*2.2*1.15*18000));
-  document.getElementById('projC').textContent=fmtNT(Math.round((readyNow*2*15000)+(readyBy2027*2.2*18000)));
-}
-function renderTimeline(){
-  const milestones=[
-    {date:'2026-06-20',label:'今日基準點',desc:(()=>{const ws=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F').map(i=>latestWeight(i.id)||i.weight);return ws.length?`最重母體 ${Math.max(...ws)}g，啟動「養兵蓄銳」階段`:'尚無母體資料，新增個體後此處自動更新';})(),color:'var(--accent2)'},
-    {date:'2026-07',label:'IG/Twitter 帳號上線',desc:'開始記錄個體日常，建立等待名單，品牌預熱啟動',color:'var(--blue)'},
-    {date:'2026-09',label:'情境A決策點',desc:'若有個體≥50g，評估是否啟動縮短冷卻期（7–8月），9月配對',color:'var(--green)'},
-    {date:'2026-11',label:'標準冷卻期開始',desc:'情境B路線：全體進入 11–1 月降溫週期',color:'var(--phase-cool,#3b5bdb)'},
-    {date:'2027-03',label:'正式配對（情境B）',desc:'達標個體引入配對，預計可配對母體 8–12 隻',color:'var(--red)'},
-    {date:'2027-05',label:'產卵期',desc:'第一批卵入孵蛋箱，IG 直播孵化過程',color:'var(--purple)'},
-    {date:'2027-08',label:'首批幼體破殼',desc:'情境B首批幼體，建立個體 QR Code 履歷',color:'var(--green)'},
-    {date:'2027-11',label:'首批台灣銷售',desc:'幼體 3 個月大，正式開售，目標 NT$200,000+',color:'var(--accent2)'},
-    {date:'2028-06',label:'副業超主業目標',desc:'月副業收入 ≥ NT$69,000，達成 2028 年6月前目標',color:'var(--green)'},
-  ];
-  document.getElementById('incomeTimeline').innerHTML=`<div style="position:relative;padding-left:20px">
-    <div style="position:absolute;left:6px;top:10px;bottom:10px;width:2px;background:var(--border)"></div>
-    ${milestones.map((m,i)=>`<div style="position:relative;padding:8px 0 8px 20px;display:flex;gap:12px;align-items:flex-start">
-      <div style="position:absolute;left:-7px;top:14px;width:14px;height:14px;border-radius:50%;background:${m.color};border:2px solid var(--bg);flex-shrink:0"></div>
-      <div style="min-width:55px;font-size:11px;color:var(--muted);padding-top:2px">${m.date}</div>
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">${m.label}</div>
-        <div style="font-size:12px;color:var(--muted)">${m.desc}</div>
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
-function renderActionList(){
-  const actions=[
-    {priority:'🔴',time:'本週',action:'逐一稱量 32 隻 amyae，填入個體履歷體重欄位','note':'確定情境A / B / 混合策略'},
-    {priority:'🔴',time:'本週',action:'電洽台灣農業部 04-2302-5101 確認出口文件 SOP','note':'提早確認，避免 2027 出口延誤'},
-    {priority:'🟡',time:'本月',action:'開設 Instagram + Twitter/X 帳號（建議 @amyae.tw）','note':'開始拍攝個體日常、環境介紹'},
-    {priority:'🟡',time:'7–8月',action:'設計「腸填實驗」第一輪（對照組 vs 實驗組飼料）','note':'數據內容的原始素材，8週後輸出科普文'},
-    {priority:'🟢',time:'9月',action:'情境A 決策：若有個體≥50g，啟動縮短冷卻+配對評估','note':'若無，繼續增重，11月進入標準冷卻'},
-    {priority:'🟢',time:'10月',action:'發送第一封日本代理商詢盤 Email（Sauria / Global Animals）','note':'附上個體照片與繁殖計畫書，建立早期關係'},
-    {priority:'🟢',time:'11月',action:'參加台灣爬蟲展（觀察者身份）','note':'確認競爭格局、本地定價基準'},
-  ];
-  document.getElementById('actionList').innerHTML=`<div style="display:flex;flex-direction:column;gap:0">
-    ${actions.map(a=>`<div style="display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start">
-      <span style="font-size:16px;flex-shrink:0">${a.priority}</span>
-      <span style="min-width:45px;font-size:11px;color:var(--muted);padding-top:2px">${a.time}</span>
-      <div>
-        <div style="font-size:13px;font-weight:600">${a.action}</div>
-        <div style="font-size:12px;color:var(--muted)">${a.note}</div>
-      </div>
-    </div>`).join('')}
-  </div>`;
 }
 
 // ═══════════════════════════════════════════
