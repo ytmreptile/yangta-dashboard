@@ -1900,15 +1900,23 @@ function updateHeaderStats(){
   const wArr=females.map(i=>latestWeight(i.id)||i.weight);
   const maxW=wArr.length?Math.max(...wArr):0;
   const now=new Date();
-  const y=now.getFullYear();
-  const target=[new Date(y,2,1),new Date(y,5,1),new Date(y,8,1),new Date(y+1,2,1)].find(d=>d>now);
-  const days=Math.ceil((target-now)/(1000*60*60*24));
+  // 真實繁殖關卡序列（依《逐月排程》SCHEDULE，非自動滾動季）：
+  // 11 月 GO/NO-GO 決策 → 次年 3 月首次配對，逐年循環。
+  const milestones=[
+    {d:new Date(2026,10,1),lbl:'距 GO/NO-GO（天）'},
+    {d:new Date(2027,2,1), lbl:'距首次配對（天）'},
+    {d:new Date(2027,10,1),lbl:'距 GO/NO-GO（天）'},
+    {d:new Date(2028,2,1), lbl:'距配對日（天）'}
+  ];
+  const next=milestones.find(m=>m.d>now)||milestones[milestones.length-1];
+  const days=Math.max(0,Math.ceil((next.d-now)/(1000*60*60*24)));
+  const gateLbl=next.lbl;
   document.getElementById('headerStats').innerHTML=`
     <div class="stat-pill"><span class="val">${DATA.individuals.length}</span><span class="lbl">總個體數</span></div>
     <div class="stat-pill"><span class="val">${readyF}/${females.length}</span><span class="lbl">母體就緒</span></div>
     <div class="stat-pill"><span class="val">${maxW}g</span><span class="lbl">最重母體</span></div>
     <div class="stat-pill"><span class="val">${avgW}g</span><span class="lbl">母體均重</span></div>
-    <div class="stat-pill"><span class="val">${days}</span><span class="lbl">距配對季（天）</span></div>`;
+    <div class="stat-pill"><span class="val">${days}</span><span class="lbl">${gateLbl}</span></div>`;
 }
 
 // ═══════════════════════════════════════════
