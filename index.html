@@ -891,7 +891,7 @@ function renderGallery(list){
       </div>
       <div class="card-body">
         <div class="card-id">${ind.id}</div>
-        <div class="card-weight">${w}<small> g</small></div>
+        <div class="card-weight">${w}<small> g</small><small style="color:var(--muted);font-weight:400;margin-left:8px">${ageM==null?'月齡未知':'月齡 '+ageM+' 個月'}</small></div>
         <div class="progress-marks"><span style="position:absolute;right:0;font-size:9px;white-space:nowrap;line-height:8px"><span style="color:var(--yellow)">${cfg.floor}g</span><span style="color:var(--muted)"> · </span><span style="color:var(--green)">${cfg.target}g</span></span></div>
         <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${col}"></div>
           <div style="position:absolute;top:0;bottom:0;left:${floorPct}%;width:1px;background:rgba(245,158,11,.5)"></div>
@@ -916,16 +916,18 @@ function renderTable(list){
   }
   el.innerHTML=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px">
     <table class="data-table">
-      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>就緒狀態</th><th>現況</th><th>取得日</th><th>文件號</th><th></th></tr></thead>
+      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>月齡</th><th>就緒狀態</th><th>現況</th><th>取得日</th><th>文件號</th><th></th></tr></thead>
       <tbody>${list.map(ind=>{
         const w=latestWeight(ind.id)||ind.weight;
-        const rb=readinessBadge(w,ind.sex,ageMonths(ind));
+        const ageM=ageMonths(ind);
+        const rb=readinessBadge(w,ind.sex,ageM);
         return`<tr>
           <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--accent2)">${ind.id}</strong></td>
           <td onclick="showIndividual('${ind.id}')">${speciesLabel[ind.species]}</td>
           <td onclick="showIndividual('${ind.id}')"><span style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</span></td>
           <td onclick="showIndividual('${ind.id}')">${ind.sex==='F'?'♀ 母':ind.sex==='M'?'♂ 公':'⚲ 未顯'}</td>
           <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--text)">${w}g</strong></td>
+          <td onclick="showIndividual('${ind.id}')" style="color:var(--muted)">${ageM==null?'—':ageM+' 個月'}</td>
           <td onclick="showIndividual('${ind.id}')"><span class="badge ${rb.cls}">${rb.txt}</span></td>
           <td onclick="showIndividual('${ind.id}')"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></td>
           <td onclick="showIndividual('${ind.id}')" style="color:var(--muted)">${ind.acquireDate||'—'}</td>
