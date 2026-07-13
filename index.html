@@ -498,7 +498,7 @@ button:active{opacity:.75}
           </select>
         </div>
         <div class="form-group">
-          <label>取得/出生日期（用於推算月齡）</label>
+          <label>出生日期（用於推算月齡）</label>
           <input type="month" id="newDate">
         </div>
         <div class="form-group">
@@ -916,7 +916,7 @@ function renderTable(list){
   }
   el.innerHTML=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px">
     <table class="data-table">
-      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>月齡</th><th>就緒狀態</th><th>現況</th><th>取得日</th><th>文件號</th><th></th></tr></thead>
+      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>月齡</th><th>就緒狀態</th><th>現況</th><th>出生日</th><th>文件號</th><th></th></tr></thead>
       <tbody>${list.map(ind=>{
         const w=latestWeight(ind.id)||ind.weight;
         const ageM=ageMonths(ind);
@@ -998,7 +998,7 @@ function showIndividual(id){
       <div class="detail-item"><div class="detail-lbl">當前體重</div><div class="detail-val" style="color:var(--accent2)">${w} g</div></div>
       <div class="detail-item"><div class="detail-lbl">繁殖就緒</div><div class="detail-val"><span class="badge ${rb.cls}" title="${assess.reason}">${rb.txt}</span><div style="font-size:10px;color:var(--muted);margin-top:3px">條件：${ind.sex==='M'?'月齡≥12 且 ≥35g（下限30g）':'月齡≥18 且 ≥50g（下限45g）'}</div></div></div>
       <div class="detail-item"><div class="detail-lbl">月齡（推算）</div><div class="detail-val">${ageM==null?'未知':ageM+' 個月'}<span style="font-size:10px;color:var(--muted)"> / 需≥${bcfg.ageReq}</span></div></div>
-      <div class="detail-item"><div class="detail-lbl">取得/出生日期</div><div class="detail-val">${ind.acquireDate||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">出生日期</div><div class="detail-val">${ind.acquireDate||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">現況</div><div class="detail-val"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">來源</div><div class="detail-val" style="font-size:13px">${ind.source||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
@@ -1192,7 +1192,7 @@ function exportIndividualPDF(id){
     <div class="pp-grid">
       <div class="pp-lbl">物種</div><div class="pp-val">${speciesLabel[ind.species]||ind.species}</div>
       <div class="pp-lbl">性別</div><div class="pp-val">${ind.sex==='F'?'母 ♀':ind.sex==='M'?'公 ♂':'未顯 ⚲'}</div>
-      <div class="pp-lbl">取得日期</div><div class="pp-val">${ind.acquireDate||'—'}</div>
+      <div class="pp-lbl">出生日期</div><div class="pp-val">${ind.acquireDate||'—'}</div>
       <div class="pp-lbl">世代</div><div class="pp-val" style="font-weight:800;color:#c9953a">${ind.generation||'F0'}</div>
       <div class="pp-lbl">當前體重</div><div class="pp-val" style="font-weight:800;font-size:15px">${w} g</div>
       <div class="pp-lbl">現況</div><div class="pp-val"><span class="pp-badge">${statusLabel[ind.status]||ind.status}</span></div>
