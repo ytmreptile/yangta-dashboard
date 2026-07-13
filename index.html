@@ -59,8 +59,6 @@ button:active{opacity:.75}
 .progress-wrap{margin:6px 0 4px;background:var(--surface3);border-radius:4px;height:5px;overflow:hidden;position:relative}
 .progress-bar{height:100%;border-radius:4px;transition:width .4s}
 .progress-marks{position:relative;height:8px;margin-bottom:2px}
-.progress-marks::before{content:'50g';position:absolute;font-size:9px;color:var(--yellow);left:71.4%}
-.progress-marks::after{content:'60g';position:absolute;font-size:9px;color:var(--green);right:0}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
 .badge-red{background:rgba(239,68,68,.15);color:var(--red)}
 .badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
@@ -118,8 +116,8 @@ button:active{opacity:.75}
 .ladder-bar-wrap{flex:1;background:var(--surface3);border-radius:4px;height:14px;overflow:hidden;position:relative}
 .ladder-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);transition:width .5s}
 .ladder-line{position:absolute;top:0;bottom:0;width:2px}
-.ladder-line-50{background:rgba(245,158,11,.6);left:71.4%}
-.ladder-line-60{background:rgba(34,197,94,.6);right:0}
+.ladder-line-50{background:rgba(245,158,11,.6);left:75%}
+.ladder-line-60{background:rgba(34,197,94,.6);left:83.33%}
 .ladder-weight{font-size:12px;font-weight:600;color:var(--text);width:40px;text-align:right}
 .ladder-eta{font-size:11px;color:var(--muted);width:60px;text-align:right}
 /* ── SCENARIO CARDS ── */
@@ -220,7 +218,7 @@ button:active{opacity:.75}
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div class="brand">陽台人 <small>培育管理儀表板 <span style="color:#666;font-size:10px">v3.7</span></small></div>
+    <div class="brand">陽台人 <small>培育管理儀表板 <span style="color:#666;font-size:10px">v3.8</span></small></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:16px">
       <button class="btn btn-sm btn-ghost" onclick="exportData()" title="匯出所有資料為 JSON 備份檔">⬇ 匯出</button>
       <button class="btn btn-sm btn-ghost" onclick="document.getElementById('importFile').click()" title="從備份檔匯入資料">⬆ 匯入</button>
@@ -386,12 +384,12 @@ button:active{opacity:.75}
 <div id="page-business" class="page">
   <!-- Weight progress to target -->
   <div class="goal-card">
-    <h4>⚖️ 母體增重進度（目標：60g 最佳繁殖體重）</h4>
+    <h4>⚖️ 母體增重進度（配對條件：月齡 ≥18 個月 且 體重 ≥50g）</h4>
     <div style="display:flex;gap:20px;font-size:12px;color:var(--muted);margin-bottom:14px;align-items:center;flex-wrap:wrap">
-      <span><span style="display:inline-block;width:10px;height:4px;background:var(--red);border-radius:2px;margin-right:4px"></span>未達標（&lt;50g）</span>
-      <span><span style="display:inline-block;width:10px;height:4px;background:var(--yellow);border-radius:2px;margin-right:4px"></span>邊緣（50–59g）</span>
-      <span><span style="display:inline-block;width:10px;height:4px;background:var(--green);border-radius:2px;margin-right:4px"></span>最佳（60g+）</span>
-      <span style="margin-left:auto">▏= 50g 最低門檻　　 ▏= 60g 理想目標</span>
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--red);border-radius:2px;margin-right:4px"></span>不可配（&lt;45g）</span>
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--yellow);border-radius:2px;margin-right:4px"></span>邊緣（45–49g）</span>
+      <span><span style="display:inline-block;width:10px;height:4px;background:var(--green);border-radius:2px;margin-right:4px"></span>達配對門檻（50g+）</span>
+      <span style="margin-left:auto">▏= 45g 絕對下限　　 ▏= 50g 適配門檻　（月齡另需人工確認 ≥18 個月）</span>
     </div>
     <div class="weight-ladder" id="weightLadder"></div>
   </div>
@@ -477,7 +475,7 @@ button:active{opacity:.75}
           </select>
         </div>
         <div class="form-group">
-          <label>取得/出生日期</label>
+          <label>取得/出生日期（用於推算月齡）</label>
           <input type="month" id="newDate">
         </div>
         <div class="form-group">
@@ -749,20 +747,44 @@ function latestWeight(id){
   return logs.length? logs[0].weight: null;
 }
 function getIndividual(id){ return DATA.individuals.find(i=>i.id===id); }
-function readinessColor(w,sex){
-  if(sex==='M') return w>=40?'var(--green)':w>=30?'var(--yellow)':'var(--red)';
-  return w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--red)';
+// ── 繁殖配對條件（單一事實來源）──
+//   母(F)：年齡 ≥18 個月、體重 ≥50g（絕對下限 45g；<45g 一律不配）
+//   公(M)：年齡 ≥12 個月、體重 ≥35g（絕對下限 30g；<30g 一律不配）
+//   「就緒」需同時滿足體重達標 AND 月齡達標。
+const BREED={
+  F:{target:50, floor:45, ageReq:18},
+  M:{target:35, floor:30, ageReq:12}
+};
+function breedCfg(sex){ return sex==='M'?BREED.M:BREED.F; }
+// 依「取得/出生日期」推算月齡；無日期或無法解析回傳 null（月齡未知，不等於達標）
+function ageMonths(ind){
+  if(!ind||!ind.acquireDate) return null;
+  const m=String(ind.acquireDate).trim().match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+  if(!m) return null;
+  const birth=new Date(+m[1],(+m[2])-1,m[3]?+m[3]:1);
+  if(isNaN(birth.getTime())) return null;
+  const now=new Date();
+  let months=(now.getFullYear()-birth.getFullYear())*12+(now.getMonth()-birth.getMonth());
+  if(now.getDate()<birth.getDate()) months--;
+  return months<0?0:months;
 }
-function readinessBadge(w,sex){
-  if(sex==='M'){
-    if(w>=40) return{cls:'badge-green',txt:'就緒 ✅'};
-    if(w>=30) return{cls:'badge-yellow',txt:'邊緣 ⚠️'};
-    return{cls:'badge-red',txt:'未達標 ✗'};
-  }
-  if(w>=60) return{cls:'badge-green',txt:'就緒 ✅'};
-  if(w>=50) return{cls:'badge-yellow',txt:'邊緣 ⚠️'};
-  return{cls:'badge-red',txt:'未達標 ✗'};
+// 綜合評估：體重(絕對下限/門檻) × 月齡 → 就緒等級
+function breedAssess(w,sex,ageM){
+  const c=breedCfg(sex);
+  const ageKnown=ageM!=null, ageOk=ageKnown&&ageM>=c.ageReq;
+  if(!(w>=c.floor)) return{level:'red',cls:'badge-red',color:'var(--red)',txt:'未達標 ✗',reason:`體重<${c.floor}g 絕對下限，一律不配`};
+  if(!(w>=c.target)) return{level:'yellow',cls:'badge-yellow',color:'var(--yellow)',txt:'邊緣 ⚠️',reason:`體重達下限但未達 ${c.target}g 配對門檻`};
+  // 體重達配對門檻，再看月齡
+  if(ageOk) return{level:'green',cls:'badge-green',color:'var(--green)',txt:'就緒 ✅',reason:`體重與月齡皆達標`};
+  if(!ageKnown) return{level:'yellow',cls:'badge-yellow',color:'var(--yellow)',txt:'待查月齡 ⚠️',reason:`體重達標，月齡未知（缺出生日期，需人工確認≥${c.ageReq}個月）`};
+  return{level:'yellow',cls:'badge-yellow',color:'var(--yellow)',txt:'月齡不足 ⚠️',reason:`體重達標，但月齡 ${ageM} 個月 <${c.ageReq} 個月`};
 }
+function isBreedReady(ind){
+  const w=latestWeight(ind.id)||ind.weight;
+  return breedAssess(w,ind.sex,ageMonths(ind)).level==='green';
+}
+function readinessColor(w,sex,ageM){ return breedAssess(w,sex,ageM).color; }
+function readinessBadge(w,sex,ageM){ const a=breedAssess(w,sex,ageM); return{cls:a.cls,txt:a.txt}; }
 function etaMonths(currentW,targetW,monthlyGain=2.5){
   const diff=targetW-currentW;
   if(diff<=0) return null;
@@ -831,10 +853,13 @@ function renderGallery(list){
   }
   el.innerHTML=`<div class="gallery">${list.map(ind=>{
     const w=latestWeight(ind.id)||ind.weight;
-    const maxW=ind.sex==='M'?40:60;
+    const cfg=breedCfg(ind.sex);
+    const ageM=ageMonths(ind);
+    const maxW=cfg.target;
     const pct=Math.min(100,Math.round(w/maxW*100));
-    const col=readinessColor(w,ind.sex);
-    const rb=readinessBadge(w,ind.sex);
+    const floorPct=Math.round(cfg.floor/maxW*100);
+    const col=readinessColor(w,ind.sex,ageM);
+    const rb=readinessBadge(w,ind.sex,ageM);
     return`<div class="ind-card" onclick="showIndividual('${ind.id}')">
       <div class="card-img">
         ${(ind.photos&&ind.photos[0])?`<img class="card-cover" src="${ind.photos[0]}">`:`<div class="card-no-photo">NO PHOTO</div>`}
@@ -844,9 +869,9 @@ function renderGallery(list){
       <div class="card-body">
         <div class="card-id">${ind.id}</div>
         <div class="card-weight">${w}<small> g</small></div>
-        <div class="progress-marks"></div>
+        <div class="progress-marks"><span style="position:absolute;left:${floorPct}%;transform:translateX(-50%);font-size:9px;color:var(--yellow)">${cfg.floor}g</span><span style="position:absolute;right:0;font-size:9px;color:var(--green)">${cfg.target}g</span></div>
         <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${col}"></div>
-          <div style="position:absolute;top:0;bottom:0;left:71.4%;width:1px;background:rgba(245,158,11,.5)"></div>
+          <div style="position:absolute;top:0;bottom:0;left:${floorPct}%;width:1px;background:rgba(245,158,11,.5)"></div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
           <span class="badge ${rb.cls}" style="font-size:10px">${rb.txt}</span>
@@ -871,7 +896,7 @@ function renderTable(list){
       <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>就緒狀態</th><th>現況</th><th>取得日</th><th>文件號</th><th></th></tr></thead>
       <tbody>${list.map(ind=>{
         const w=latestWeight(ind.id)||ind.weight;
-        const rb=readinessBadge(w,ind.sex);
+        const rb=readinessBadge(w,ind.sex,ageMonths(ind));
         return`<tr>
           <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--accent2)">${ind.id}</strong></td>
           <td onclick="showIndividual('${ind.id}')">${speciesLabel[ind.species]}</td>
@@ -892,8 +917,11 @@ function showIndividual(id){
   if(!ind) return;
   const w=latestWeight(id)||ind.weight;
   const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>a.date.localeCompare(b.date));
-  const rb=readinessBadge(w,ind.sex);
-  const eta=ind.species==='amyae'&&ind.sex==='F'?etaMonths(w,60):null;
+  const ageM=ageMonths(ind);
+  const rb=readinessBadge(w,ind.sex,ageM);
+  const bcfg=breedCfg(ind.sex);
+  const assess=breedAssess(w,ind.sex,ageM);
+  const eta=ind.species==='amyae'&&ind.sex==='F'?etaMonths(w,50):null;
 
   // Mini SVG chart
   let chartHtml='';
@@ -916,8 +944,10 @@ function showIndividual(id){
           <text x="${x}" y="${y-8}" font-size="9" fill="var(--muted)" text-anchor="middle">${l.weight}g</text>`;
         }).join('')}
         ${ind.sex==='F'&&ind.species==='amyae'?`
-          <line x1="0" y1="${90-((50-minW)/(maxW-minW))*70}" x2="280" y2="${90-((50-minW)/(maxW-minW))*70}" stroke="rgba(245,158,11,.4)" stroke-width="1" stroke-dasharray="4,3"/>
-          <text x="2" y="${90-((50-minW)/(maxW-minW))*70-3}" font-size="8" fill="var(--yellow)">50g</text>`:''}
+          <line x1="0" y1="${90-((50-minW)/(maxW-minW))*70}" x2="280" y2="${90-((50-minW)/(maxW-minW))*70}" stroke="rgba(34,197,94,.4)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="2" y="${90-((50-minW)/(maxW-minW))*70-3}" font-size="8" fill="var(--green)">50g 門檻</text>
+          <line x1="0" y1="${90-((45-minW)/(maxW-minW))*70}" x2="280" y2="${90-((45-minW)/(maxW-minW))*70}" stroke="rgba(245,158,11,.35)" stroke-width="1" stroke-dasharray="2,3"/>
+          <text x="2" y="${90-((45-minW)/(maxW-minW))*70-3}" font-size="8" fill="var(--yellow)">45g 下限</text>`:''}
       </svg>
     </div>`;
   }
@@ -941,8 +971,9 @@ function showIndividual(id){
       <div class="detail-item"><div class="detail-lbl">物種</div><div class="detail-val">${speciesLabel[ind.species]}</div></div>
       <div class="detail-item"><div class="detail-lbl">性別</div><div class="detail-val">${ind.sex==='F'?'♀ 母':ind.sex==='M'?'♂ 公':'⚲ 未顯'}</div></div>
       <div class="detail-item"><div class="detail-lbl">當前體重</div><div class="detail-val" style="color:var(--accent2)">${w} g</div></div>
-      <div class="detail-item"><div class="detail-lbl">繁殖就緒</div><div class="detail-val"><span class="badge ${rb.cls}">${rb.txt}</span></div></div>
-      <div class="detail-item"><div class="detail-lbl">取得日期</div><div class="detail-val">${ind.acquireDate||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">繁殖就緒</div><div class="detail-val"><span class="badge ${rb.cls}" title="${assess.reason}">${rb.txt}</span><div style="font-size:10px;color:var(--muted);margin-top:3px">條件：${ind.sex==='M'?'月齡≥12 且 ≥35g（下限30g）':'月齡≥18 且 ≥50g（下限45g）'}</div></div></div>
+      <div class="detail-item"><div class="detail-lbl">月齡（推算）</div><div class="detail-val">${ageM==null?'未知':ageM+' 個月'}<span style="font-size:10px;color:var(--muted)"> / 需≥${bcfg.ageReq}</span></div></div>
+      <div class="detail-item"><div class="detail-lbl">取得/出生日期</div><div class="detail-val">${ind.acquireDate||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">現況</div><div class="detail-val"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">來源</div><div class="detail-val" style="font-size:13px">${ind.source||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
@@ -952,7 +983,7 @@ function showIndividual(id){
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
       </div>`})()}
-      ${eta?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距60g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${eta} 個月（${addMonths('2026-06-20',eta)}）</div></div>`:''}
+      ${eta?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距50g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${eta} 個月（${addMonths('2026-06-20',eta)}）</div></div>`:''}
     </div>
     ${chartHtml}
     <div class="section-hdr" style="margin-top:12px">最近記錄</div>
@@ -1034,12 +1065,18 @@ function exportIndividualPDF(id){
   // Breeding readiness bar
   let readinessHtml='';
   if(ind.species==='amyae'){
-    const targetW=ind.sex==='F'?60:40;
-    const minThresh=ind.sex==='F'?50:30;
+    const c=breedCfg(ind.sex);
+    const targetW=c.target, minThresh=c.floor;
+    const pdfAge=ageMonths(ind);
+    const a=breedAssess(w,ind.sex,pdfAge);
     const pct=Math.min(100,Math.round((w/targetW)*100));
     const minPct=Math.round((minThresh/targetW)*100);
-    const col=w>=targetW?'#16a34a':w>=minThresh?'#d97706':'#dc2626';
-    const lbl=w>=targetW?'繁殖最佳狀態':w>=minThresh?'邊緣可配對':'尚未達標';
+    const col=a.level==='green'?'#16a34a':a.level==='yellow'?'#d97706':'#dc2626';
+    let lbl;
+    if(a.level==='red') lbl='未達下限·一律不配';
+    else if(w>=targetW) lbl=(pdfAge!=null&&pdfAge>=c.ageReq)?'繁殖最佳狀態':(pdfAge!=null?'體重達標·月齡不足':'體重達標·待查月齡');
+    else lbl='邊緣可配對';
+    const ageStr=pdfAge==null?'月齡未知':`月齡 ${pdfAge} 個月`;
     readinessHtml=`<div style="margin:14px 0 0">
       <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">繁殖就緒評估 · Breeding Readiness</div>
       <div style="display:flex;align-items:center;gap:14px">
@@ -1047,8 +1084,9 @@ function exportIndividualPDF(id){
           <div style="width:${pct}%;height:100%;background:${col};border-radius:4px;transition:width .3s"></div>
           <div style="position:absolute;top:0;bottom:0;left:${minPct}%;width:2px;background:#d97706;opacity:.7"></div>
         </div>
-        <span style="font-size:12px;font-weight:800;color:${col};white-space:nowrap;min-width:160px">${w}g / ${targetW}g &nbsp;—&nbsp; ${lbl}</span>
+        <span style="font-size:12px;font-weight:800;color:${col};white-space:nowrap;min-width:180px">${w}g / ${targetW}g &nbsp;—&nbsp; ${lbl}</span>
       </div>
+      <div style="font-size:10px;color:#999;margin-top:5px">配對條件：${ind.sex==='M'?'月齡 ≥12 個月 且 體重 ≥35g（絕對下限 30g）':'月齡 ≥18 個月 且 體重 ≥50g（絕對下限 45g）'}　·　目前 ${ageStr}（需≥${c.ageReq}）</div>
     </div>`;
   }
 
@@ -1747,12 +1785,12 @@ function renderWeightLadder(){
     document.getElementById('weightLadder').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">新增棘皮瘤尾守宮母體個體後，此處自動顯示增重進度。</div>';
     return;
   }
-  const maxW=70;
+  const maxW=60;
   const ladder=females.map(ind=>{
     const w=latestWeight(ind.id)||ind.weight;
     const pct=Math.min(100,Math.round(w/maxW*100));
-    const col=w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--red)';
-    const eta=etaMonths(w,60);
+    const col=w>=50?'var(--green)':w>=45?'var(--yellow)':'var(--red)';
+    const eta=etaMonths(w,50);
     const etaStr=eta?`+${eta}月`:'✅';
     return`<div class="ladder-row">
       <span class="ladder-id">${ind.id}</span>
@@ -1762,7 +1800,7 @@ function renderWeightLadder(){
         <div class="ladder-line ladder-line-60"></div>
       </div>
       <span class="ladder-weight">${w}g</span>
-      <span class="ladder-eta" style="color:${w>=60?'var(--green)':w>=50?'var(--yellow)':'var(--muted)'}">${etaStr}</span>
+      <span class="ladder-eta" style="color:${w>=50?'var(--green)':w>=45?'var(--yellow)':'var(--muted)'}">${etaStr}</span>
     </div>`;
   }).join('');
   document.getElementById('weightLadder').innerHTML=ladder;
@@ -1831,7 +1869,7 @@ function renderActionList(){
 // ═══════════════════════════════════════════
 function updateHeaderStats(){
   const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
-  const readyF=females.filter(i=>(latestWeight(i.id)||i.weight)>=50).length;
+  const readyF=females.filter(isBreedReady).length;
   const avgW=females.length?+(females.reduce((s,i)=>s+(latestWeight(i.id)||i.weight),0)/females.length).toFixed(1):0;
   const wArr=females.map(i=>latestWeight(i.id)||i.weight);
   const maxW=wArr.length?Math.max(...wArr):0;
