@@ -653,6 +653,33 @@ function migrateData(data){
   });
   return data;
 }
+// 一次性：為既有個體補「建檔初始體重」基準記錄，讓培育日誌能算出「變化」。
+// 背景：舊版建檔時體重只寫進 ind.weight、沒存成 weightLog，導致第一次培育日誌記錄
+//       找不到前一筆可比，「變化」永遠顯示「—」。以 DATA._baselineSeeded 旗標保證只跑一次。
+function seedBaselineWeightLogs(){
+  if(DATA._baselineSeeded){ return false; }
+  // 已用培育日誌記錄過、ind.weight 已被新體重覆蓋的個體，原始建檔體重取自 2026-07-13 備份
+  const ORIG={ 'NA-M-001':36, 'NA-M-002':33, 'NA-M-003':31 };
+  let added=0;
+  (DATA.individuals||[]).forEach(ind=>{
+    const logs=DATA.weightLogs.filter(l=>l.individualId===ind.id).sort((a,b)=>a.date.localeCompare(b.date));
+    const bDate=(/^\d{4}-\d{2}$/.test(ind.acquireDate||'')?ind.acquireDate:'2025-07')+'-01';
+    let w=null;
+    if(logs.length===0){
+      // 從未記錄過：ind.weight 就是目前的建檔體重
+      w=parseFloat(ind.weight)||0;
+    }else if(ORIG[ind.id]!=null && logs[0].date>bDate && logs[0].weight!==ORIG[ind.id]){
+      // 已被日誌覆蓋 ind.weight：用備份的原始建檔體重，且最早記錄晚於建檔月才補
+      w=ORIG[ind.id];
+    }
+    if(w>0){
+      DATA.weightLogs.push({id:`WL-seed-${ind.id}`,individualId:ind.id,date:bDate,weight:w,appetite:'good',food:[],supplements:[],notes:'初始體重（建檔）'});
+      added++;
+    }
+  });
+  DATA._baselineSeeded=true;
+  return added>0;
+}
 // ═══════════════════════════════════════════
 //  IndexedDB 照片倉庫（大容量，解決 localStorage 5MB 塞爆問題）
 //  設計：文字資料仍存 localStorage（極小、不會爆）；照片(base64)改存 IndexedDB。
@@ -721,6 +748,11 @@ async function loadData(){
       const map=await idbGetAllPhotos();
       (DATA.individuals||[]).forEach(ind=>{ ind.photos = map[ind.id] || (Array.isArray(ind.photos)?ind.photos:[]); });
     }catch(e){ console.error('自 IndexedDB 讀取照片失敗',e); }
+  }
+  // 一次性補「建檔初始體重」基準記錄（idempotent，由旗標保護只跑一次）
+  if(seedBaselineWeightLogs()){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stripPhotos(DATA))); }
+    catch(e){ console.error('初始體重基準寫入失敗',e); }
   }
 }
 function saveData(){
