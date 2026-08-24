@@ -1717,7 +1717,7 @@ function renderLogs(){
   document.getElementById('logContent').innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <table class="data-table">
-        <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>主食</th><th>備註</th></tr></thead>
+        <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>主食</th><th>備註</th><th>操作</th></tr></thead>
         <tbody>${logs.map(l=>{
           // find prev log for same individual — 用 (日期, id) 複合鍵排序，
           // 讓同一天的多筆記錄（如建檔初始體重 + 當天培育日誌）也能正確找到前一筆並算出變化
@@ -1736,10 +1736,32 @@ function renderLogs(){
             <td style="color:${apColor[l.appetite]||'var(--text)'}">${appetiteLabel[l.appetite]||l.appetite}</td>
             <td style="color:var(--muted);font-size:12px">${l.food.join('、')||'—'}</td>
             <td style="color:var(--muted);font-size:12px">${l.notes||'—'}</td>
+            <td><button type="button" title="刪除此筆記錄" style="background:rgba(239,68,68,.12);color:var(--red);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer" onclick="deleteWeightLog('${l.id}')">🗑</button></td>
           </tr>`;
         }).join('')}</tbody>
       </table>
     </div>`;
+}
+// 刪除單筆體重記錄（雙擊確認，與刪蛋一致）；刪除後把 ind.weight 對齊到該個體剩餘的最新記錄
+let _delLogConfirmId=null,_delLogConfirmTimer=null;
+function deleteWeightLog(logId){
+  if(_delLogConfirmId===logId){
+    clearTimeout(_delLogConfirmTimer); _delLogConfirmId=null;
+    const log=DATA.weightLogs.find(l=>l.id===logId);
+    const indId=log?log.individualId:null;
+    DATA.weightLogs=DATA.weightLogs.filter(l=>l.id!==logId);
+    if(indId){
+      const ind=getIndividual(indId);
+      const rest=DATA.weightLogs.filter(l=>l.individualId===indId).sort((a,b)=>b.date.localeCompare(a.date));
+      if(ind&&rest[0]) ind.weight=rest[0].weight; // 尚有記錄→對齊最新；已無記錄→保留原值不動
+    }
+    saveData(); renderLogs(); renderRegistry(); updateHeaderStats();
+    toast('已刪除該筆記錄');
+  } else {
+    _delLogConfirmId=logId;
+    toast('⚠️ 再按一次確認刪除這筆體重記錄');
+    _delLogConfirmTimer=setTimeout(()=>{_delLogConfirmId=null;},3000);
+  }
 }
 
 // ═══════════════════════════════════════════
