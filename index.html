@@ -1687,8 +1687,11 @@ function renderLogs(){
       <table class="data-table">
         <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>主食</th><th>備註</th></tr></thead>
         <tbody>${logs.map(l=>{
-          // find prev log for same individual
-          const prevLogs=DATA.weightLogs.filter(x=>x.individualId===l.individualId&&x.date<l.date).sort((a,b)=>b.date.localeCompare(a.date));
+          // find prev log for same individual — 用 (日期, id) 複合鍵排序，
+          // 讓同一天的多筆記錄（如建檔初始體重 + 當天培育日誌）也能正確找到前一筆並算出變化
+          const rank=x=>x.date+'#'+x.id;
+          const cur=rank(l);
+          const prevLogs=DATA.weightLogs.filter(x=>x.individualId===l.individualId&&rank(x)<cur).sort((a,b)=>rank(b).localeCompare(rank(a)));
           const prev=prevLogs[0];
           const delta=prev?+(l.weight-prev.weight).toFixed(1):null;
           const deltaHtml=delta===null?'<span style="color:var(--muted)">—</span>':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
