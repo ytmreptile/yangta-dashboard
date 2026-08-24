@@ -680,6 +680,20 @@ function seedBaselineWeightLogs(){
   DATA._baselineSeeded=true;
   return added>0;
 }
+// 一次性：補 NA-F-027 的建檔初始體重（26g / 取得月）。上一輪基準遷移因 027 當時已有
+// 7/10 記錄而略過它；此處單獨補上第一筆。027 若已有「取得月(含)以前」的記錄則不重複補，
+// 故 7/10 那筆刪了沒都安全。以 DATA._seed027 旗標保證只跑一次。
+function ensure027Baseline(){
+  if(DATA._seed027){ return false; }
+  DATA._seed027=true;
+  const ind=getIndividual('NA-F-027');
+  if(!ind){ return false; }
+  const bDate=(/^\d{4}-\d{2}$/.test(ind.acquireDate||'')?ind.acquireDate:'2025-06')+'-01';
+  const logs=DATA.weightLogs.filter(l=>l.individualId==='NA-F-027');
+  if(logs.some(l=>l.date<=bDate)){ return false; } // 已有取得月(含)以前的記錄 → 不重複
+  DATA.weightLogs.push({id:'WL-seed-NA-F-027',individualId:'NA-F-027',date:bDate,weight:26,appetite:'good',food:[],supplements:[],notes:'初始體重（建檔）'});
+  return true;
+}
 // ═══════════════════════════════════════════
 //  IndexedDB 照片倉庫（大容量，解決 localStorage 5MB 塞爆問題）
 //  設計：文字資料仍存 localStorage（極小、不會爆）；照片(base64)改存 IndexedDB。
@@ -750,7 +764,7 @@ async function loadData(){
     }catch(e){ console.error('自 IndexedDB 讀取照片失敗',e); }
   }
   // 一次性補「建檔初始體重」基準記錄（idempotent，由旗標保護只跑一次）
-  if(seedBaselineWeightLogs()){
+  if(seedBaselineWeightLogs()|ensure027Baseline()){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stripPhotos(DATA))); }
     catch(e){ console.error('初始體重基準寫入失敗',e); }
   }
