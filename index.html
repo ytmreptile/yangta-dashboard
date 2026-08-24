@@ -694,6 +694,17 @@ function ensure027Baseline(){
   DATA.weightLogs.push({id:'WL-seed-NA-F-027',individualId:'NA-F-027',date:bDate,weight:26,appetite:'good',food:[],supplements:[],notes:'初始體重（建檔）'});
   return true;
 }
+// 一次性：把所有「初始體重（建檔）」基準記錄（id 開頭 WL-seed-）的日期統一改為
+// 2026-07-13（使用者實際建檔日）。只動基準筆，不碰其他培育日誌記錄。旗標保證只跑一次。
+function fixBaselineDatesTo0713(){
+  if(DATA._baselineDate0713){ return false; }
+  DATA._baselineDate0713=true;
+  let n=0;
+  (DATA.weightLogs||[]).forEach(l=>{
+    if(typeof l.id==='string' && l.id.indexOf('WL-seed-')===0 && l.date!=='2026-07-13'){ l.date='2026-07-13'; n++; }
+  });
+  return n>0;
+}
 // ═══════════════════════════════════════════
 //  IndexedDB 照片倉庫（大容量，解決 localStorage 5MB 塞爆問題）
 //  設計：文字資料仍存 localStorage（極小、不會爆）；照片(base64)改存 IndexedDB。
@@ -764,7 +775,7 @@ async function loadData(){
     }catch(e){ console.error('自 IndexedDB 讀取照片失敗',e); }
   }
   // 一次性補「建檔初始體重」基準記錄（idempotent，由旗標保護只跑一次）
-  if(seedBaselineWeightLogs()|ensure027Baseline()){
+  if(seedBaselineWeightLogs()|ensure027Baseline()|fixBaselineDatesTo0713()){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stripPhotos(DATA))); }
     catch(e){ console.error('初始體重基準寫入失敗',e); }
   }
