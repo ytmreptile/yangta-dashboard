@@ -312,17 +312,9 @@ button:active{opacity:.75}
           </select>
         </div>
         <div class="form-group">
-          <label>蛻皮</label>
-          <select id="logShed" onchange="onShedChange()">
-            <option value="" selected>無</option>
-            <option value="normal">正常蛻皮</option>
-            <option value="incomplete">蛻皮不全</option>
-          </select>
+          <label>蛻皮日期（無則免填）</label>
+          <input type="date" id="logShedDate">
         </div>
-      </div>
-      <div class="form-group" id="shedDateRow" style="display:none;margin-bottom:8px">
-        <label>蛻皮日期</label>
-        <input type="date" id="logShedDate">
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label>主食內容（點選複數）</label>
@@ -1134,7 +1126,7 @@ function showIndividual(id){
       <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">世代</div><div class="detail-val" style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">品系/體色</div><div class="detail-val">${ind.color||'Normal'}</div></div>
-      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">距上次蛻皮</div><div class="detail-val">${shedInfo?`${shedInfo.days} 天（${formatDate(shedInfo.date)}）`:'<span style="color:var(--muted)">尚無蛻皮紀錄</span>'}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">蛻皮紀錄</div><div class="detail-val">${shedInfo?`距上次蛻皮 ${shedInfo.days} 天<br><small style="color:var(--muted);font-weight:400">歷次蛻皮：${shedDatesOf(id).slice().reverse().map(formatDate).join('、')}</small>`:'<span style="color:var(--muted)">尚無蛻皮紀錄</span>'}</div></div>
       ${(()=>{const fa=ind.fatherId?getIndividual(ind.fatherId):null;const mo=ind.motherId?getIndividual(ind.motherId):null;if(!fa&&!mo)return'';return`<div class="detail-item" style="grid-column:1/-1;display:flex;gap:12px;padding:10px 12px;background:rgba(201,149,58,.06);border:1px solid rgba(201,149,58,.2);border-radius:8px">
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
@@ -1154,7 +1146,7 @@ function showIndividual(id){
             <span class="log-date">${formatDate(l.date)}</span>
             <span class="log-weight-val">${l.weight}g</span>
             <span class="log-delta">${deltaHtml}</span>
-            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${l.shed==='normal'?'&nbsp;｜&nbsp;<span style="color:var(--green)">🦎正常蛻</span>':l.shed==='incomplete'?'&nbsp;｜&nbsp;<span style="color:var(--red)">⚠️蛻皮不全</span>':''}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
+            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${(l.shedDate||l.shed)?'&nbsp;｜&nbsp;<span style="color:var(--accent2)">🦎蛻皮 '+formatDate(l.shedDate||l.date)+'</span>':''}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
           </div>`;
         }).join('')}
     </div>
@@ -1767,21 +1759,32 @@ function onLogIndividualChange(){
   if(ls){ shedBadge.style.display='inline'; document.getElementById('lsValue').textContent=`${ls.days} 天`; }
   else { shedBadge.style.display='none'; }
 }
-// 顯示/隱藏「蛻皮日期」欄：選了正常/不全才出現，並預設帶入記錄日期
-function onShedChange(){
-  const v=document.getElementById('logShed').value;
-  const row=document.getElementById('shedDateRow');
-  const sd=document.getElementById('logShedDate');
-  if(v){ row.style.display='block'; if(!sd.value) sd.value=document.getElementById('logDate').value||new Date().toISOString().split('T')[0]; }
-  else { row.style.display='none'; }
+// 某個體所有蛻皮日期（升冪、去重）。相容舊資料：新版用 shedDate，若舊資料有 shed 旗標而無 shedDate 則退回記錄日期。
+function shedDatesOf(id){
+  const s=new Set();
+  DATA.weightLogs.forEach(l=>{ if(l.individualId===id){ const d=l.shedDate||(l.shed?l.date:null); if(d) s.add(d); } });
+  return [...s].sort();
 }
-// 某個體最近一次蛻皮：回傳 {date, days} 或 null（無蛻皮紀錄）。日期取 shedDate，缺則退回該筆記錄日期。
+// 某個體最近一次蛻皮：回傳 {date, days} 或 null（無蛻皮紀錄）。
 function lastShed(id){
-  const sheds=DATA.weightLogs.filter(l=>l.individualId===id&&l.shed).map(l=>l.shedDate||l.date).sort();
+  const sheds=shedDatesOf(id);
   if(!sheds.length) return null;
   const last=sheds[sheds.length-1];
   const days=Math.floor((new Date().setHours(0,0,0,0)-new Date(last).setHours(0,0,0,0))/86400000);
   return {date:last, days:Math.max(0,days)};
+}
+// 全群平均蛻皮週期（天）：各個體相鄰兩次蛻皮的間隔，全部平均。不足（無人有≥2次）回 null。
+function avgShedInterval(){
+  const intervals=[];
+  DATA.individuals.forEach(i=>{
+    const dates=shedDatesOf(i.id);
+    for(let k=1;k<dates.length;k++){
+      const d=(new Date(dates[k])-new Date(dates[k-1]))/86400000;
+      if(d>0) intervals.push(d);
+    }
+  });
+  if(!intervals.length) return null;
+  return Math.round(intervals.reduce((a,b)=>a+b,0)/intervals.length);
 }
 function getSelectedChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c=>c.dataset.val);
@@ -1804,8 +1807,7 @@ function saveLog(){
   const fields={
     individualId:id,date,weight,
     appetite:document.getElementById('logAppetite').value,
-    shed:document.getElementById('logShed').value,
-    shedDate:document.getElementById('logShed').value?(document.getElementById('logShedDate').value||date):'',
+    shedDate:document.getElementById('logShedDate').value||'', // 有蛻皮才填日期，無則空
     food:getSelectedChips('foodChips'),
     supplements:getSelectedChips('suppChips'),
     notes:document.getElementById('logNotes').value
@@ -1853,9 +1855,7 @@ function editWeightLog(logId){
   document.getElementById('logDate').value=log.date;
   document.getElementById('logWeight').value=log.weight;
   document.getElementById('logAppetite').value=log.appetite||'good';
-  document.getElementById('logShed').value=log.shed||'';
-  document.getElementById('logShedDate').value=log.shedDate||log.date||'';
-  onShedChange(); // 依蛻皮狀態顯示/隱藏日期欄
+  document.getElementById('logShedDate').value=log.shedDate||'';
   setSelectedChips('foodChips',log.food);
   setSelectedChips('suppChips',log.supplements);
   document.getElementById('logNotes').value=log.notes||'';
@@ -1884,9 +1884,7 @@ function cancelEditLog(){
   setSelectedChips('foodChips',['杜比亞']);
   setSelectedChips('suppChips',['Repashy基礎鈣維他']);
   document.getElementById('logAppetite').value='good';
-  document.getElementById('logShed').value='';
   document.getElementById('logShedDate').value='';
-  onShedChange(); // 收起蛻皮日期欄
   document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('logFormHdr').textContent='新增體重記錄';
   document.getElementById('logSaveBtn').textContent='儲存記錄';
@@ -1937,9 +1935,8 @@ function renderLogs(){
           const delta=prev?+(l.weight-prev.weight).toFixed(1):null;
           const deltaHtml=delta===null?'<span style="color:var(--muted)">—</span>':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
           const apColor={excellent:'var(--green)',good:'var(--accent2)',poor:'var(--yellow)',refused:'var(--red)'};
-          const shedMap={normal:{t:'🦎 正常',c:'var(--green)'},incomplete:{t:'⚠️ 不全',c:'var(--red)'}};
-          const sd=shedMap[l.shed];
-          const shedHtml=sd?`<span title="蛻皮日期 ${l.shedDate?formatDate(l.shedDate):formatDate(l.date)}" style="color:${sd.c};font-size:12px;font-weight:600">${sd.t}${l.shedDate&&l.shedDate!==l.date?`<br><small style="color:var(--muted);font-weight:400">${formatDate(l.shedDate)}</small>`:''}</span>`:'<span style="color:var(--muted)">—</span>';
+          const shedD=l.shedDate||(l.shed?l.date:'');
+          const shedHtml=shedD?`<span style="color:var(--accent2);font-size:12px;font-weight:600;white-space:nowrap">🦎 ${formatDate(shedD)}</span>`:'<span style="color:var(--muted)">—</span>';
           return`<tr>
             <td style="color:var(--muted)">${formatDate(l.date)}</td>
             <td><strong style="color:var(--accent2)">${l.individualId}</strong></td>
@@ -2210,6 +2207,7 @@ function updateHeaderStats(){
   // 所有個體「近期月均增重」：取各個體可計算的實測速率平均（含停滯/負值＝真實淨值）
   const rates=DATA.individuals.map(i=>growthRate(i.id)).filter(r=>r!=null);
   const avgGain=rates.length?+(rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1):null;
+  const avgShed=avgShedInterval(); // 全群平均蛻皮週期（天）
   const now=new Date();
   // 真實繁殖關卡序列（依《逐月排程》SCHEDULE，非自動滾動季）：
   // 11 月 GO/NO-GO 決策 → 次年 3 月首次配對，逐年循環。
@@ -2229,6 +2227,7 @@ function updateHeaderStats(){
     <div class="stat-pill"><span class="val">${readyF}/${females.length}</span><span class="lbl">母體就緒</span></div>
     <div class="stat-pill"><span class="val">${readyM}/${males.length}</span><span class="lbl">公體就緒</span></div>
     <div class="stat-pill"><span class="val">${avgGain!=null?(avgGain>=0?'+'+avgGain:avgGain)+'g':'—'}</span><span class="lbl">月均增重</span></div>
+    <div class="stat-pill"><span class="val">${avgShed!=null?avgShed+' 天':'—'}</span><span class="lbl">平均蛻皮天數</span></div>
     ${gateDays!=null?`<div class="stat-pill"><span class="val">${gateDays}</span><span class="lbl">距 GO/NO-GO（天）</span></div>`:''}
     ${pairDays!=null?`<div class="stat-pill"><span class="val">${pairDays}</span><span class="lbl">距配對日（天）</span></div>`:''}`;
 }
