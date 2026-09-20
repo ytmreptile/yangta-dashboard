@@ -315,17 +315,13 @@ button:active{opacity:.75}
         <div class="chips" id="foodChips">
           <div class="chip selected" data-val="杜比亞">杜比亞</div>
           <div class="chip" data-val="蟋蟀">蟋蟀</div>
-          <div class="chip" data-val="麥皮蟲">麥皮蟲</div>
-          <div class="chip" data-val="黑水虻">黑水虻</div>
-          <div class="chip" data-val="Repashy">Repashy</div>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label>補充劑</label>
         <div class="chips" id="suppChips">
-          <div class="chip selected" data-val="Calcium+D3">Calcium+D3</div>
+          <div class="chip selected" data-val="Repashy基礎鈣維他">Repashy基礎鈣維他</div>
           <div class="chip" data-val="純鈣">純鈣</div>
-          <div class="chip" data-val="綜合維他命">綜合維他命</div>
           <div class="chip" data-val="Reptoboost">Reptoboost</div>
         </div>
       </div>
@@ -1817,7 +1813,7 @@ function cancelEditLog(){
   document.getElementById('logWeight').value='';
   document.getElementById('logNotes').value='';
   setSelectedChips('foodChips',['杜比亞']);
-  setSelectedChips('suppChips',['Calcium+D3']);
+  setSelectedChips('suppChips',['Repashy基礎鈣維他']);
   document.getElementById('logAppetite').value='good';
   document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('logFormHdr').textContent='新增體重記錄';
