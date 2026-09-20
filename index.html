@@ -269,8 +269,8 @@ button:active{opacity:.75}
       <option value="sale">待售</option>
     </select>
     <div class="toggle-group">
-      <button class="toggle-btn active" id="viewGallery" onclick="setView('gallery')">▦ 畫廊</button>
-      <button class="toggle-btn" id="viewTable" onclick="setView('table')">☰ 列表</button>
+      <button class="toggle-btn" id="viewGallery" onclick="setView('gallery')">▦ 畫廊</button>
+      <button class="toggle-btn active" id="viewTable" onclick="setView('table')">☰ 列表</button>
     </div>
     <button class="btn btn-sm" onclick="openAddIndividual()">＋ 新增個體</button>
     <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="registryCount"></span>
@@ -901,26 +901,32 @@ function etaMonths(currentW,targetW,monthlyGain=2.5){
   if(diff<=0) return null;
   return Math.ceil(diff/monthlyGain);
 }
-// 依個體歷史培育日誌估算「實測」每月增幅(g/月)：取最早↔最新兩筆的總增重÷跨月數。
-// 紀錄<2筆、跨度<15天、或非正成長（持平/下降）→ 回傳 null（交由後備固定速率）。
+// 依個體培育日誌估算「近期」每月增幅(g/月)。刻意取最近至多 3 筆（而非全段），
+// 避免幼體期的高速增重掩蓋成體後的停滯。跨度不足 15 天則放寬到全段；仍不足回 null。
+// 回傳的 rate 可能 ≤0（代表近期持平或下降）。
 function growthRate(id){
   const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>a.date.localeCompare(b.date));
   if(logs.length<2) return null;
-  const first=logs[0], last=logs[logs.length-1];
-  const days=(new Date(last.date)-new Date(first.date))/86400000;
+  const window=logs.slice(-3);
+  let first=window[0]; const last=window[window.length-1];
+  let days=(new Date(last.date)-new Date(first.date))/86400000;
+  if(days<15){ first=logs[0]; days=(new Date(last.date)-new Date(first.date))/86400000; }
   if(days<15) return null;
-  const rate=(last.weight-first.weight)/(days/30.44);
-  return rate>0?rate:null;
+  return (last.weight-first.weight)/(days/30.44);
 }
-// 推估到達 targetW 還需幾個月：優先用實測速率，不足則退回 2.5g/月。
-// 回傳 {months, measured}；已達標回傳 null。
+// 推估到達 targetW 還需幾個月。回傳其一：
+//   {done:true}                已達標
+//   {stalled:true}             近期幾乎沒長(可能已成體) → 不硬湊月數
+//   {months, measured:true}    依近期實測速率推估
+//   {months, measured:false}   紀錄不足 → 退回 2.5g/月 預設
 function etaToTarget(ind,targetW){
   const w=latestWeight(ind.id)||ind.weight;
   const diff=targetW-w;
-  if(diff<=0) return null;
+  if(diff<=0) return {done:true};
   const r=growthRate(ind.id);
-  const g=(r&&r>0)?r:2.5;
-  return {months:Math.ceil(diff/g), measured:!!(r&&r>0)};
+  if(r==null) return {months:Math.ceil(diff/2.5), measured:false};
+  if(r<0.5) return {stalled:true}; // <0.5g/月 視為幾乎沒在增重
+  return {months:Math.ceil(diff/r), measured:true};
 }
 function addMonths(baseDate,months){
   const d=new Date(baseDate);
@@ -933,7 +939,7 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 // ═══════════════════════════════════════════
 //  TABS
 // ═══════════════════════════════════════════
-let currentView='gallery';
+let currentView='table';
 function switchTab(tab){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1117,7 +1123,8 @@ function showIndividual(id){
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
       </div>`})()}
-      ${etaInfo?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距50g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${etaInfo.months} 個月（${addMonths(new Date().toISOString().split('T')[0],etaInfo.months)}）<small style="color:var(--muted);font-weight:400"> · ${etaInfo.measured?'依實測增重速率':'紀錄不足，用 2.5g/月 預設'}</small></div></div>`:''}
+      ${etaInfo&&etaInfo.months?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距50g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${etaInfo.months} 個月（${addMonths(new Date().toISOString().split('T')[0],etaInfo.months)}）<small style="color:var(--muted);font-weight:400"> · ${etaInfo.measured?'依近期實測增重速率':'紀錄不足，用 2.5g/月 預設'}</small></div></div>`:''}
+      ${etaInfo&&etaInfo.stalled?`<div class="detail-item" style="grid-column:1/-1;background:var(--surface2)"><div class="detail-lbl">距50g目標預估</div><div class="detail-val" style="color:var(--muted)">近期體重停滯（可能已成體），暫無法推估達標時間</div></div>`:''}
     </div>
     ${chartHtml}
     <div class="section-hdr" style="margin-top:12px">最近記錄</div>
@@ -2091,10 +2098,12 @@ function renderWeightLadder(){
     const pct=Math.min(100,Math.round(w/maxW*100));
     // 此表＝純增重進度：顏色只看體重，月齡交由人工判斷（不併入）
     const col=w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--red)';
-    // 右側＝預估多久達標（用實測增重速率，紀錄不足退回 2.5g/月，退回時加 *）
+    // 右側＝預估多久達標（近期實測速率；停滯不硬湊、紀錄不足退回 2.5g/月加 *）
     const e=etaToTarget(ind,c.target);
-    const statusStr=e?`+${e.months}月${e.measured?'':'*'}`:'✅';
-    const statusTitle=e?(e.measured?'依個體實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'):'體重已達標';
+    let statusStr,statusTitle,etaColor;
+    if(e.done){ statusStr='✅'; statusTitle='體重已達標'; etaColor='var(--green)'; }
+    else if(e.stalled){ statusStr='停滯'; statusTitle='近期體重幾乎無成長（可能已成體），暫不推估達標時間'; etaColor='var(--muted)'; }
+    else { statusStr=`+${e.months}月${e.measured?'':'*'}`; statusTitle=e.measured?'依個體近期實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'; etaColor=w>=c.floor?'var(--yellow)':'var(--muted)'; }
     return`<div class="ladder-row">
       <span class="ladder-id">${ind.id}</span>
       <div class="ladder-bar-wrap">
@@ -2103,7 +2112,7 @@ function renderWeightLadder(){
         <div class="ladder-line ladder-line-60"></div>
       </div>
       <span class="ladder-weight">${w}g</span>
-      <span class="ladder-eta" title="${statusTitle}" style="color:${w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--muted)'}">${statusStr}</span>
+      <span class="ladder-eta" title="${statusTitle}" style="color:${etaColor}">${statusStr}</span>
     </div>`;
   }).join('');
   document.getElementById('weightLadder').innerHTML=ladder;
@@ -2124,8 +2133,10 @@ function renderMaleWeightLadder(){
     const pct=Math.min(100,Math.round(w/maxW*100));
     const col=w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--red)'; // 純增重進度，月齡人工判斷
     const e=etaToTarget(ind,c.target);
-    const statusStr=e?`+${e.months}月${e.measured?'':'*'}`:'✅';
-    const statusTitle=e?(e.measured?'依個體實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'):'體重已達標';
+    let statusStr,statusTitle,etaColor;
+    if(e.done){ statusStr='✅'; statusTitle='體重已達標'; etaColor='var(--green)'; }
+    else if(e.stalled){ statusStr='停滯'; statusTitle='近期體重幾乎無成長（可能已成體），暫不推估達標時間'; etaColor='var(--muted)'; }
+    else { statusStr=`+${e.months}月${e.measured?'':'*'}`; statusTitle=e.measured?'依個體近期實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'; etaColor=w>=c.floor?'var(--yellow)':'var(--muted)'; }
     return`<div class="ladder-row">
       <span class="ladder-id">${ind.id}</span>
       <div class="ladder-bar-wrap">
@@ -2134,7 +2145,7 @@ function renderMaleWeightLadder(){
         <div class="ladder-line" style="left:${posTarget}%;background:rgba(34,197,94,.6)"></div>
       </div>
       <span class="ladder-weight">${w}g</span>
-      <span class="ladder-eta" title="${statusTitle}" style="color:${w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--muted)'}">${statusStr}</span>
+      <span class="ladder-eta" title="${statusTitle}" style="color:${etaColor}">${statusStr}</span>
     </div>`;
   }).join('');
   box.innerHTML=ladder;
