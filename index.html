@@ -901,6 +901,27 @@ function etaMonths(currentW,targetW,monthlyGain=2.5){
   if(diff<=0) return null;
   return Math.ceil(diff/monthlyGain);
 }
+// 依個體歷史培育日誌估算「實測」每月增幅(g/月)：取最早↔最新兩筆的總增重÷跨月數。
+// 紀錄<2筆、跨度<15天、或非正成長（持平/下降）→ 回傳 null（交由後備固定速率）。
+function growthRate(id){
+  const logs=DATA.weightLogs.filter(l=>l.individualId===id).sort((a,b)=>a.date.localeCompare(b.date));
+  if(logs.length<2) return null;
+  const first=logs[0], last=logs[logs.length-1];
+  const days=(new Date(last.date)-new Date(first.date))/86400000;
+  if(days<15) return null;
+  const rate=(last.weight-first.weight)/(days/30.44);
+  return rate>0?rate:null;
+}
+// 推估到達 targetW 還需幾個月：優先用實測速率，不足則退回 2.5g/月。
+// 回傳 {months, measured}；已達標回傳 null。
+function etaToTarget(ind,targetW){
+  const w=latestWeight(ind.id)||ind.weight;
+  const diff=targetW-w;
+  if(diff<=0) return null;
+  const r=growthRate(ind.id);
+  const g=(r&&r>0)?r:2.5;
+  return {months:Math.ceil(diff/g), measured:!!(r&&r>0)};
+}
 function addMonths(baseDate,months){
   const d=new Date(baseDate);
   d.setMonth(d.getMonth()+months);
@@ -1034,7 +1055,7 @@ function showIndividual(id){
   const rb=readinessBadge(w,ind.sex,ageM);
   const bcfg=breedCfg(ind.sex);
   const assess=breedAssess(w,ind.sex,ageM);
-  const eta=ind.species==='amyae'&&ind.sex==='F'?etaMonths(w,50):null;
+  const etaInfo=ind.species==='amyae'&&ind.sex==='F'?etaToTarget(ind,50):null;
 
   // Mini SVG chart
   let chartHtml='';
@@ -1096,7 +1117,7 @@ function showIndividual(id){
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
       </div>`})()}
-      ${eta?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距50g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${eta} 個月（${addMonths('2026-06-20',eta)}）</div></div>`:''}
+      ${etaInfo?`<div class="detail-item" style="grid-column:1/-1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="detail-lbl" style="color:var(--green)">距50g目標預估</div><div class="detail-val" style="color:var(--green)">約 ${etaInfo.months} 個月（${addMonths(new Date().toISOString().split('T')[0],etaInfo.months)}）<small style="color:var(--muted);font-weight:400"> · ${etaInfo.measured?'依實測增重速率':'紀錄不足，用 2.5g/月 預設'}</small></div></div>`:''}
     </div>
     ${chartHtml}
     <div class="section-hdr" style="margin-top:12px">最近記錄</div>
@@ -2067,20 +2088,22 @@ function renderWeightLadder(){
   const maxW=60, c=BREED.F;
   const ladder=females.map(ind=>{
     const w=latestWeight(ind.id)||ind.weight;
-    const ageM=ageMonths(ind);
-    const a=breedAssess(w,ind.sex,ageM); // 體重＋月齡綜合，與個體履歷/header 同一套
     const pct=Math.min(100,Math.round(w/maxW*100));
-    // 就緒→✅；體重未達門檻→顯示增重 ETA；體重達標但月齡卡關→標明原因
-    const statusStr=a.level==='green'?'✅':(w<c.target?`+${etaMonths(w,c.target)}月`:(ageM==null?'待查月齡':'月齡不足'));
+    // 此表＝純增重進度：顏色只看體重，月齡交由人工判斷（不併入）
+    const col=w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--red)';
+    // 右側＝預估多久達標（用實測增重速率，紀錄不足退回 2.5g/月，退回時加 *）
+    const e=etaToTarget(ind,c.target);
+    const statusStr=e?`+${e.months}月${e.measured?'':'*'}`:'✅';
+    const statusTitle=e?(e.measured?'依個體實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'):'體重已達標';
     return`<div class="ladder-row">
       <span class="ladder-id">${ind.id}</span>
       <div class="ladder-bar-wrap">
-        <div class="ladder-bar" style="width:${pct}%;background:${a.color}">${w}g</div>
+        <div class="ladder-bar" style="width:${pct}%;background:${col}">${w}g</div>
         <div class="ladder-line ladder-line-50"></div>
         <div class="ladder-line ladder-line-60"></div>
       </div>
       <span class="ladder-weight">${w}g</span>
-      <span class="ladder-eta" style="color:${a.color}">${statusStr}</span>
+      <span class="ladder-eta" title="${statusTitle}" style="color:${w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--muted)'}">${statusStr}</span>
     </div>`;
   }).join('');
   document.getElementById('weightLadder').innerHTML=ladder;
@@ -2098,19 +2121,20 @@ function renderMaleWeightLadder(){
   const posFloor=c.floor/maxW*100, posTarget=c.target/maxW*100;
   const ladder=males.map(ind=>{
     const w=latestWeight(ind.id)||ind.weight;
-    const ageM=ageMonths(ind);
-    const a=breedAssess(w,ind.sex,ageM); // 體重＋月齡綜合，與個體履歷/header 同一套
     const pct=Math.min(100,Math.round(w/maxW*100));
-    const statusStr=a.level==='green'?'✅':(w<c.target?`+${etaMonths(w,c.target)}月`:(ageM==null?'待查月齡':'月齡不足'));
+    const col=w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--red)'; // 純增重進度，月齡人工判斷
+    const e=etaToTarget(ind,c.target);
+    const statusStr=e?`+${e.months}月${e.measured?'':'*'}`:'✅';
+    const statusTitle=e?(e.measured?'依個體實測增重速率推估':'紀錄不足，用預設 2.5g/月 推估'):'體重已達標';
     return`<div class="ladder-row">
       <span class="ladder-id">${ind.id}</span>
       <div class="ladder-bar-wrap">
-        <div class="ladder-bar" style="width:${pct}%;background:${a.color}">${w}g</div>
+        <div class="ladder-bar" style="width:${pct}%;background:${col}">${w}g</div>
         <div class="ladder-line" style="left:${posFloor}%;background:rgba(245,158,11,.6)"></div>
         <div class="ladder-line" style="left:${posTarget}%;background:rgba(34,197,94,.6)"></div>
       </div>
       <span class="ladder-weight">${w}g</span>
-      <span class="ladder-eta" style="color:${a.color}">${statusStr}</span>
+      <span class="ladder-eta" title="${statusTitle}" style="color:${w>=c.target?'var(--green)':w>=c.floor?'var(--yellow)':'var(--muted)'}">${statusStr}</span>
     </div>`;
   }).join('');
   box.innerHTML=ladder;
