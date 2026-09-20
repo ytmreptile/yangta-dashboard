@@ -272,7 +272,7 @@ button:active{opacity:.75}
   <div class="log-layout">
     <!-- Left: Add form -->
     <div class="log-form-sticky">
-      <div class="section-hdr">新增體重記錄</div>
+      <div class="section-hdr" id="logFormHdr">新增體重記錄</div>
       <div class="form-group" style="margin-bottom:10px">
         <label>選擇個體</label>
         <select id="logIndividual" onchange="onLogIndividualChange()">
@@ -327,7 +327,8 @@ button:active{opacity:.75}
         <label>備註</label>
         <textarea id="logNotes" placeholder="蛻皮狀況、異常行為..."></textarea>
       </div>
-      <button class="btn" style="width:100%" onclick="saveLog()">儲存記錄</button>
+      <button class="btn" style="width:100%" id="logSaveBtn" onclick="saveLog()">儲存記錄</button>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;display:none" id="logCancelBtn" onclick="cancelEditLog()">取消編輯</button>
     </div>
     <!-- Right: Log list -->
     <div>
@@ -1691,6 +1692,14 @@ function onLogIndividualChange(){
 function getSelectedChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c=>c.dataset.val);
 }
+// 依 values 陣列設定某組 chips 的 selected 狀態（用於編輯時回填）
+function setSelectedChips(containerId,values){
+  const vals=values||[];
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c=>{
+    c.classList.toggle('selected',vals.includes(c.dataset.val));
+  });
+}
+let _editLogId=null;
 function saveLog(){
   const id=document.getElementById('logIndividual').value;
   const weight=parseFloat(document.getElementById('logWeight').value);
@@ -1698,30 +1707,76 @@ function saveLog(){
   if(!id){toast('請選擇個體');return;}
   if(!weight||weight<=0){toast('請輸入有效體重');return;}
   if(!date){toast('請輸入日期');return;}
-  const log={
-    id:`WL-${Date.now()}`,individualId:id,date,weight,
+  const fields={
+    individualId:id,date,weight,
     appetite:document.getElementById('logAppetite').value,
     food:getSelectedChips('foodChips'),
     supplements:getSelectedChips('suppChips'),
     notes:document.getElementById('logNotes').value
   };
-  DATA.weightLogs.push(log);
-  // sync ind.weight to the chronologically latest log (handles backdated entries)
-  const ind=getIndividual(id);
-  if(ind){
-    const latest=DATA.weightLogs
-      .filter(l=>l.individualId===id)
-      .sort((a,b)=>b.date.localeCompare(a.date))[0];
-    if(latest) ind.weight=latest.weight;
+  let syncId=id;
+  if(_editLogId){
+    // 編輯既有記錄：就地更新（保留原 id）
+    const log=DATA.weightLogs.find(l=>l.id===_editLogId);
+    if(!log){toast('找不到要編輯的記錄');cancelEditLog();return;}
+    const oldId=log.individualId;
+    Object.assign(log,fields);
+    // 若編輯時改了個體，兩隻個體的 ind.weight 都要重新對齊
+    if(oldId!==id) syncIndWeight(oldId);
+  } else {
+    DATA.weightLogs.push({id:`WL-${Date.now()}`,...fields});
   }
+  syncIndWeight(syncId);
   saveData();
-  document.getElementById('logWeight').value='';
-  document.getElementById('logNotes').value='';
-  onLogIndividualChange();
+  const wasEdit=!!_editLogId;
+  cancelEditLog(); // 重置表單回「新增」模式並清空輸入
   renderLogs();
   renderRegistry();
   updateHeaderStats();
-  toast(`✅ 已記錄 ${id} 體重 ${weight}g`);
+  toast(wasEdit?`✅ 已更新 ${id} 記錄（${weight}g）`:`✅ 已記錄 ${id} 體重 ${weight}g`);
+}
+// 把某個體的 ind.weight 對齊到其時序最新的一筆記錄（處理補登/回溯日期）
+function syncIndWeight(id){
+  const ind=getIndividual(id);
+  if(!ind) return;
+  const latest=DATA.weightLogs
+    .filter(l=>l.individualId===id)
+    .sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(latest) ind.weight=latest.weight;
+}
+// 載入某筆記錄到左側表單進入編輯模式
+function editWeightLog(logId){
+  const log=DATA.weightLogs.find(l=>l.id===logId);
+  if(!log){toast('找不到該筆記錄');return;}
+  _editLogId=logId;
+  _delLogConfirmId=null; // 取消任何待確認的刪除
+  populateLogSelects(); // 確保個體下拉已填入（編輯鈕本就在培育日誌頁）
+  document.getElementById('logIndividual').value=log.individualId;
+  onLogIndividualChange();
+  document.getElementById('logDate').value=log.date;
+  document.getElementById('logWeight').value=log.weight;
+  document.getElementById('logAppetite').value=log.appetite||'good';
+  setSelectedChips('foodChips',log.food);
+  setSelectedChips('suppChips',log.supplements);
+  document.getElementById('logNotes').value=log.notes||'';
+  document.getElementById('logFormHdr').textContent=`編輯記錄 · ${log.individualId}`;
+  document.getElementById('logSaveBtn').textContent='更新記錄';
+  document.getElementById('logCancelBtn').style.display='block';
+  document.querySelector('.log-form-sticky').scrollIntoView({behavior:'smooth',block:'start'});
+}
+// 取消編輯 / 存檔後重置表單回「新增」模式
+function cancelEditLog(){
+  _editLogId=null;
+  document.getElementById('logWeight').value='';
+  document.getElementById('logNotes').value='';
+  setSelectedChips('foodChips',['杜比亞']);
+  setSelectedChips('suppChips',['Calcium+D3']);
+  document.getElementById('logAppetite').value='good';
+  document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('logFormHdr').textContent='新增體重記錄';
+  document.getElementById('logSaveBtn').textContent='儲存記錄';
+  document.getElementById('logCancelBtn').style.display='none';
+  onLogIndividualChange();
 }
 function renderLogs(){
   const filterInd=document.getElementById('logFilterIndividual').value;
@@ -1761,7 +1816,7 @@ function renderLogs(){
             <td style="color:${apColor[l.appetite]||'var(--text)'}">${appetiteLabel[l.appetite]||l.appetite}</td>
             <td style="color:var(--muted);font-size:12px">${l.food.join('、')||'—'}</td>
             <td style="color:var(--muted);font-size:12px">${l.notes||'—'}</td>
-            <td><button type="button" title="刪除此筆記錄" style="background:rgba(239,68,68,.12);color:var(--red);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer" onclick="deleteWeightLog('${l.id}')">🗑</button></td>
+            <td style="white-space:nowrap"><button type="button" title="編輯此筆記錄" style="background:rgba(96,165,250,.15);color:var(--blue);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer;margin-right:4px" onclick="editWeightLog('${l.id}')">✏️</button><button type="button" title="刪除此筆記錄" style="background:rgba(239,68,68,.12);color:var(--red);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer" onclick="deleteWeightLog('${l.id}')">🗑</button></td>
           </tr>`;
         }).join('')}</tbody>
       </table>
