@@ -286,7 +286,7 @@ button:active{opacity:.75}
       <button type="button" class="log-sheet-close" title="收合" onclick="closeLogForm()">✕</button>
       <div class="section-hdr" id="logFormHdr">新增體重記錄</div>
       <div class="form-group" style="margin-bottom:8px">
-        <label>選擇個體 <span id="currentWeightBadge" style="display:none;text-transform:none;letter-spacing:0;color:var(--accent2);font-weight:800">· 最新 <span id="cwValue">—</span></span></label>
+        <label>選擇個體 <span id="currentWeightBadge" style="display:none;text-transform:none;letter-spacing:0;color:var(--accent2);font-weight:800">· 最新 <span id="cwValue">—</span></span><span id="lastShedBadge" style="display:none;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600"> · 距上次蛻皮 <span id="lsValue"></span></span></label>
         <select id="logIndividual" onchange="onLogIndividualChange()">
           <option value="">— 選擇個體 —</option>
         </select>
@@ -301,14 +301,28 @@ button:active{opacity:.75}
           <input type="number" id="logWeight" step="0.1" min="0" max="200" placeholder="46">
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:8px">
-        <label>進食狀況</label>
-        <select id="logAppetite">
-          <option value="excellent">優（主動爆食）</option>
-          <option value="good" selected>良（正常進食）</option>
-          <option value="poor">差（少量進食）</option>
-          <option value="refused">拒食</option>
-        </select>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="form-group">
+          <label>進食狀況</label>
+          <select id="logAppetite">
+            <option value="excellent">優（主動爆食）</option>
+            <option value="good" selected>良（正常進食）</option>
+            <option value="poor">差（少量進食）</option>
+            <option value="refused">拒食</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>蛻皮</label>
+          <select id="logShed" onchange="onShedChange()">
+            <option value="" selected>無</option>
+            <option value="normal">正常蛻皮</option>
+            <option value="incomplete">蛻皮不全</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="shedDateRow" style="display:none;margin-bottom:8px">
+        <label>蛻皮日期</label>
+        <input type="date" id="logShedDate">
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label>主食內容（點選複數）</label>
@@ -1062,6 +1076,7 @@ function showIndividual(id){
   const bcfg=breedCfg(ind.sex);
   const assess=breedAssess(w,ind.sex,ageM);
   const etaInfo=ind.species==='amyae'&&ind.sex==='F'?etaToTarget(ind,50):null;
+  const shedInfo=lastShed(id);
 
   // Mini SVG chart
   let chartHtml='';
@@ -1119,6 +1134,7 @@ function showIndividual(id){
       <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">世代</div><div class="detail-val" style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">品系/體色</div><div class="detail-val">${ind.color||'Normal'}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">距上次蛻皮</div><div class="detail-val">${shedInfo?`${shedInfo.days} 天（${formatDate(shedInfo.date)}）`:'<span style="color:var(--muted)">尚無蛻皮紀錄</span>'}</div></div>
       ${(()=>{const fa=ind.fatherId?getIndividual(ind.fatherId):null;const mo=ind.motherId?getIndividual(ind.motherId):null;if(!fa&&!mo)return'';return`<div class="detail-item" style="grid-column:1/-1;display:flex;gap:12px;padding:10px 12px;background:rgba(201,149,58,.06);border:1px solid rgba(201,149,58,.2);border-radius:8px">
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
@@ -1138,7 +1154,7 @@ function showIndividual(id){
             <span class="log-date">${formatDate(l.date)}</span>
             <span class="log-weight-val">${l.weight}g</span>
             <span class="log-delta">${deltaHtml}</span>
-            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
+            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${l.shed==='normal'?'&nbsp;｜&nbsp;<span style="color:var(--green)">🦎正常蛻</span>':l.shed==='incomplete'?'&nbsp;｜&nbsp;<span style="color:var(--red)">⚠️蛻皮不全</span>':''}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
           </div>`;
         }).join('')}
     </div>
@@ -1742,10 +1758,30 @@ function populateLogSelects(){
 function onLogIndividualChange(){
   const id=document.getElementById('logIndividual').value;
   const badge=document.getElementById('currentWeightBadge');
-  if(!id){badge.style.display='none';return;}
+  const shedBadge=document.getElementById('lastShedBadge');
+  if(!id){badge.style.display='none';shedBadge.style.display='none';return;}
   const w=latestWeight(id);
   badge.style.display='inline';
   document.getElementById('cwValue').textContent=w?`${w}g`:'無記錄';
+  const ls=lastShed(id);
+  if(ls){ shedBadge.style.display='inline'; document.getElementById('lsValue').textContent=`${ls.days} 天`; }
+  else { shedBadge.style.display='none'; }
+}
+// 顯示/隱藏「蛻皮日期」欄：選了正常/不全才出現，並預設帶入記錄日期
+function onShedChange(){
+  const v=document.getElementById('logShed').value;
+  const row=document.getElementById('shedDateRow');
+  const sd=document.getElementById('logShedDate');
+  if(v){ row.style.display='block'; if(!sd.value) sd.value=document.getElementById('logDate').value||new Date().toISOString().split('T')[0]; }
+  else { row.style.display='none'; }
+}
+// 某個體最近一次蛻皮：回傳 {date, days} 或 null（無蛻皮紀錄）。日期取 shedDate，缺則退回該筆記錄日期。
+function lastShed(id){
+  const sheds=DATA.weightLogs.filter(l=>l.individualId===id&&l.shed).map(l=>l.shedDate||l.date).sort();
+  if(!sheds.length) return null;
+  const last=sheds[sheds.length-1];
+  const days=Math.floor((new Date().setHours(0,0,0,0)-new Date(last).setHours(0,0,0,0))/86400000);
+  return {date:last, days:Math.max(0,days)};
 }
 function getSelectedChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c=>c.dataset.val);
@@ -1768,6 +1804,8 @@ function saveLog(){
   const fields={
     individualId:id,date,weight,
     appetite:document.getElementById('logAppetite').value,
+    shed:document.getElementById('logShed').value,
+    shedDate:document.getElementById('logShed').value?(document.getElementById('logShedDate').value||date):'',
     food:getSelectedChips('foodChips'),
     supplements:getSelectedChips('suppChips'),
     notes:document.getElementById('logNotes').value
@@ -1815,6 +1853,9 @@ function editWeightLog(logId){
   document.getElementById('logDate').value=log.date;
   document.getElementById('logWeight').value=log.weight;
   document.getElementById('logAppetite').value=log.appetite||'good';
+  document.getElementById('logShed').value=log.shed||'';
+  document.getElementById('logShedDate').value=log.shedDate||log.date||'';
+  onShedChange(); // 依蛻皮狀態顯示/隱藏日期欄
   setSelectedChips('foodChips',log.food);
   setSelectedChips('suppChips',log.supplements);
   document.getElementById('logNotes').value=log.notes||'';
@@ -1843,6 +1884,9 @@ function cancelEditLog(){
   setSelectedChips('foodChips',['杜比亞']);
   setSelectedChips('suppChips',['Repashy基礎鈣維他']);
   document.getElementById('logAppetite').value='good';
+  document.getElementById('logShed').value='';
+  document.getElementById('logShedDate').value='';
+  onShedChange(); // 收起蛻皮日期欄
   document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('logFormHdr').textContent='新增體重記錄';
   document.getElementById('logSaveBtn').textContent='儲存記錄';
@@ -1882,7 +1926,7 @@ function renderLogs(){
   document.getElementById('logContent').innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <table class="data-table">
-        <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>主食</th><th>備註</th><th>操作</th></tr></thead>
+        <thead><tr><th>日期</th><th>個體</th><th>體重</th><th>變化</th><th>食慾</th><th>蛻皮</th><th>主食</th><th>備註</th><th>操作</th></tr></thead>
         <tbody>${logs.map(l=>{
           // find prev log for same individual — 用 (日期, id) 複合鍵排序，
           // 讓同一天的多筆記錄（如建檔初始體重 + 當天培育日誌）也能正確找到前一筆並算出變化
@@ -1893,12 +1937,16 @@ function renderLogs(){
           const delta=prev?+(l.weight-prev.weight).toFixed(1):null;
           const deltaHtml=delta===null?'<span style="color:var(--muted)">—</span>':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
           const apColor={excellent:'var(--green)',good:'var(--accent2)',poor:'var(--yellow)',refused:'var(--red)'};
+          const shedMap={normal:{t:'🦎 正常',c:'var(--green)'},incomplete:{t:'⚠️ 不全',c:'var(--red)'}};
+          const sd=shedMap[l.shed];
+          const shedHtml=sd?`<span title="蛻皮日期 ${l.shedDate?formatDate(l.shedDate):formatDate(l.date)}" style="color:${sd.c};font-size:12px;font-weight:600">${sd.t}${l.shedDate&&l.shedDate!==l.date?`<br><small style="color:var(--muted);font-weight:400">${formatDate(l.shedDate)}</small>`:''}</span>`:'<span style="color:var(--muted)">—</span>';
           return`<tr>
             <td style="color:var(--muted)">${formatDate(l.date)}</td>
             <td><strong style="color:var(--accent2)">${l.individualId}</strong></td>
             <td><strong>${l.weight}g</strong></td>
             <td>${deltaHtml}</td>
             <td style="color:${apColor[l.appetite]||'var(--text)'}">${appetiteLabel[l.appetite]||l.appetite}</td>
+            <td>${shedHtml}</td>
             <td style="color:var(--muted);font-size:12px">${l.food.join('、')||'—'}</td>
             <td style="color:var(--muted);font-size:12px">${l.notes||'—'}</td>
             <td style="white-space:nowrap"><button type="button" title="編輯此筆記錄" style="background:rgba(96,165,250,.15);color:var(--blue);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer;margin-right:4px" onclick="editWeightLog('${l.id}')">✏️</button><button type="button" title="刪除此筆記錄" style="background:rgba(239,68,68,.12);color:var(--red);border:none;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer" onclick="deleteWeightLog('${l.id}')">🗑</button></td>
