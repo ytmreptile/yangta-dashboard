@@ -181,6 +181,17 @@ button:active{opacity:.75}
   .photo-grid-5{grid-template-columns:repeat(3,1fr)!important}
   .hdr-top{gap:10px}
 }
+/* ── LOG FORM: 手機用浮動鈕 + 底部彈出表單（桌機維持左側 sticky 不變）── */
+.fab-log{display:none}
+.log-sheet-backdrop{display:none}
+.log-sheet-close{display:none;position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;border-radius:50%;background:var(--surface2);color:var(--text);font-size:20px;line-height:1;align-items:center;justify-content:center;cursor:pointer;z-index:1}
+@media(max-width:768px){
+  .fab-log{display:flex;align-items:center;gap:6px;position:fixed;right:16px;bottom:16px;z-index:150;background:var(--accent);color:#fff;border:none;border-radius:28px;padding:14px 20px;font-size:15px;font-weight:700;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer}
+  .log-form-sticky{display:none}
+  .log-form-sticky.open{display:block;position:fixed;left:0;right:0;bottom:0;top:auto;z-index:210;max-height:88vh;overflow-y:auto;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.5);-webkit-overflow-scrolling:touch}
+  .log-sheet-backdrop.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200}
+  .log-sheet-close{display:flex}
+}
 /* ── TOUCH TARGETS ── */
 @media(hover:none) and (pointer:coarse){
   .btn{min-height:44px}
@@ -272,6 +283,7 @@ button:active{opacity:.75}
   <div class="log-layout">
     <!-- Left: Add form -->
     <div class="log-form-sticky">
+      <button type="button" class="log-sheet-close" title="收合" onclick="closeLogForm()">✕</button>
       <div class="section-hdr" id="logFormHdr">新增體重記錄</div>
       <div class="form-group" style="margin-bottom:10px">
         <label>選擇個體</label>
@@ -346,6 +358,9 @@ button:active{opacity:.75}
       <div id="logContent"></div>
     </div>
   </div>
+  <!-- 手機專用：浮動新增鈕 + 背景遮罩（桌機隱藏） -->
+  <div class="log-sheet-backdrop" id="logSheetBackdrop" onclick="closeLogForm()"></div>
+  <button type="button" class="fab-log" onclick="openLogFormNew()">＋ 記錄</button>
 </div>
 
 <!-- TAB 3: 孵化看板 -->
@@ -1742,6 +1757,7 @@ function saveLog(){
   saveData();
   const wasEdit=!!_editLogId;
   cancelEditLog(); // 重置表單回「新增」模式並清空輸入
+  closeLogForm();  // 手機：存完收合底部表單，露出最新列表（桌機無作用）
   renderLogs();
   renderRegistry();
   updateHeaderStats();
@@ -1774,8 +1790,20 @@ function editWeightLog(logId){
   document.getElementById('logFormHdr').textContent=`編輯記錄 · ${log.individualId}`;
   document.getElementById('logSaveBtn').textContent='更新記錄';
   document.getElementById('logCancelBtn').style.display='block';
-  document.querySelector('.log-form-sticky').scrollIntoView({behavior:'smooth',block:'start'});
+  openLogForm(); // 手機彈出底部表單；桌機 sticky 表單本就可見（.open 樣式僅作用於手機）
 }
+// 手機底部彈出表單控制（桌機 .open 樣式無作用，呼叫安全）
+function openLogForm(){
+  const f=document.querySelector('.log-form-sticky');
+  f.classList.add('open'); f.scrollTop=0;
+  document.getElementById('logSheetBackdrop').classList.add('open');
+}
+function closeLogForm(){
+  document.querySelector('.log-form-sticky').classList.remove('open');
+  document.getElementById('logSheetBackdrop').classList.remove('open');
+}
+// 浮動「＋ 記錄」鈕：先復位成新增模式再彈出
+function openLogFormNew(){ cancelEditLog(); openLogForm(); }
 // 取消編輯 / 存檔後重置表單回「新增」模式
 function cancelEditLog(){
   _editLogId=null;
@@ -2119,7 +2147,7 @@ function closeModal(id){
   el.style.display='none'; // inline style forces immediate hide on iOS
   void el.offsetHeight;    // 強制同步 reflow，逼 iOS 立刻重繪、確實關窗
 }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>{o.classList.remove('open');o.style.display='none';}); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.querySelectorAll('.overlay.open').forEach(o=>{o.classList.remove('open');o.style.display='none';}); closeLogForm(); } });
 
 // ═══════════════════════════════════════════
 //  CHIP TOGGLE
