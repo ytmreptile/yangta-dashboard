@@ -2157,9 +2157,11 @@ function renderMaleWeightLadder(){
 function updateHeaderStats(){
   const females=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='F');
   const readyF=females.filter(isBreedReady).length;
-  const avgW=females.length?+(females.reduce((s,i)=>s+(latestWeight(i.id)||i.weight),0)/females.length).toFixed(1):0;
-  const wArr=females.map(i=>latestWeight(i.id)||i.weight);
-  const maxW=wArr.length?Math.max(...wArr):0;
+  const males=DATA.individuals.filter(i=>i.species==='amyae'&&i.sex==='M');
+  const readyM=males.filter(isBreedReady).length;
+  // 所有個體「近期月均增重」：取各個體可計算的實測速率平均（含停滯/負值＝真實淨值）
+  const rates=DATA.individuals.map(i=>growthRate(i.id)).filter(r=>r!=null);
+  const avgGain=rates.length?+(rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1):null;
   const now=new Date();
   // 真實繁殖關卡序列（依《逐月排程》SCHEDULE，非自動滾動季）：
   // 11 月 GO/NO-GO 決策 → 次年 3 月首次配對，逐年循環。
@@ -2177,8 +2179,8 @@ function updateHeaderStats(){
   document.getElementById('headerStats').innerHTML=`
     <div class="stat-pill"><span class="val">${DATA.individuals.length}</span><span class="lbl">總個體數</span></div>
     <div class="stat-pill"><span class="val">${readyF}/${females.length}</span><span class="lbl">母體就緒</span></div>
-    <div class="stat-pill"><span class="val">${maxW}g</span><span class="lbl">最重母體</span></div>
-    <div class="stat-pill"><span class="val">${avgW}g</span><span class="lbl">母體均重</span></div>
+    <div class="stat-pill"><span class="val">${readyM}/${males.length}</span><span class="lbl">公體就緒</span></div>
+    <div class="stat-pill"><span class="val">${avgGain!=null?(avgGain>=0?'+'+avgGain:avgGain)+'g':'—'}</span><span class="lbl">月均增重</span></div>
     ${gateDays!=null?`<div class="stat-pill"><span class="val">${gateDays}</span><span class="lbl">距 GO/NO-GO（天）</span></div>`:''}
     ${pairDays!=null?`<div class="stat-pill"><span class="val">${pairDays}</span><span class="lbl">距配對日（天）</span></div>`:''}`;
 }
