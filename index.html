@@ -1126,7 +1126,7 @@ function showIndividual(id){
       <div class="detail-item"><div class="detail-lbl">文件/進口號</div><div class="detail-val" style="font-size:13px">${ind.docNo||'—'}</div></div>
       <div class="detail-item"><div class="detail-lbl">世代</div><div class="detail-val" style="font-weight:700;color:var(--accent2)">${ind.generation||'F0'}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">品系/體色</div><div class="detail-val">${ind.color||'Normal'}</div></div>
-      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">蛻皮紀錄</div><div class="detail-val">${shedInfo?`距上次蛻皮 ${shedInfo.days} 天<br><small style="color:var(--muted);font-weight:400">歷次蛻皮：${shedDatesOf(id).slice().reverse().map(formatDate).join('、')}</small>`:'<span style="color:var(--muted)">尚無蛻皮紀錄</span>'}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-lbl">蛻皮紀錄</div><div class="detail-val">${shedInfo?`${shedInfo.interval!=null?`距上次蛻皮 ${shedInfo.interval} 天`:'首次蛻皮紀錄（尚無間隔）'}<br><small style="color:var(--muted);font-weight:400">歷次蛻皮：${shedDatesOf(id).slice().reverse().map(formatDate).join('、')}</small>`:'<span style="color:var(--muted)">尚無蛻皮紀錄</span>'}</div></div>
       ${(()=>{const fa=ind.fatherId?getIndividual(ind.fatherId):null;const mo=ind.motherId?getIndividual(ind.motherId):null;if(!fa&&!mo)return'';return`<div class="detail-item" style="grid-column:1/-1;display:flex;gap:12px;padding:10px 12px;background:rgba(201,149,58,.06);border:1px solid rgba(201,149,58,.2);border-radius:8px">
         ${fa?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(fa.photos||[])[0]?`<img src="${fa.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♂</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">父體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${fa.id}</div></div></div>`:''}
         ${mo?`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="width:36px;height:36px;border-radius:6px;overflow:hidden;background:var(--surface3);flex-shrink:0">${(mo.photos||[])[0]?`<img src="${mo.photos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">♀</div>'}</div><div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">母體</div><div style="font-size:13px;font-weight:700;color:var(--accent2)">${mo.id}</div></div></div>`:''}
@@ -1756,7 +1756,7 @@ function onLogIndividualChange(){
   badge.style.display='inline';
   document.getElementById('cwValue').textContent=w?`${w}g`:'無記錄';
   const ls=lastShed(id);
-  if(ls){ shedBadge.style.display='inline'; document.getElementById('lsValue').textContent=`${ls.days} 天`; }
+  if(ls&&ls.interval!=null){ shedBadge.style.display='inline'; document.getElementById('lsValue').textContent=`${ls.interval} 天`; }
   else { shedBadge.style.display='none'; }
 }
 // 某個體所有蛻皮日期（升冪、去重）。相容舊資料：新版用 shedDate，若舊資料有 shed 旗標而無 shedDate 則退回記錄日期。
@@ -1765,13 +1765,15 @@ function shedDatesOf(id){
   DATA.weightLogs.forEach(l=>{ if(l.individualId===id){ const d=l.shedDate||(l.shed?l.date:null); if(d) s.add(d); } });
   return [...s].sort();
 }
-// 某個體最近一次蛻皮：回傳 {date, days} 或 null（無蛻皮紀錄）。
+// 某個體蛻皮資訊：{date:最近一次蛻皮日, prev:上一次, interval:兩者相隔天數(蛻皮日−蛻皮日)}。
+// 無蛻皮紀錄→null；只有 1 筆→interval=null（無從相減）。
 function lastShed(id){
   const sheds=shedDatesOf(id);
   if(!sheds.length) return null;
   const last=sheds[sheds.length-1];
-  const days=Math.floor((new Date().setHours(0,0,0,0)-new Date(last).setHours(0,0,0,0))/86400000);
-  return {date:last, days:Math.max(0,days)};
+  const prev=sheds.length>=2?sheds[sheds.length-2]:null;
+  const interval=prev?Math.round((new Date(last)-new Date(prev))/86400000):null;
+  return {date:last, prev, interval};
 }
 // 全群平均蛻皮週期（天）：各個體相鄰兩次蛻皮的間隔，全部平均。不足（無人有≥2次）回 null。
 function avgShedInterval(){
