@@ -159,7 +159,7 @@ button:active{opacity:.75}
 .chip.selected{background:rgba(201,149,58,.2);border-color:var(--accent);color:var(--accent2)}
 /* ── LOG LAYOUT ── */
 .log-layout{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
-.log-form-sticky{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:sticky;top:80px}
+.log-form-sticky{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;position:sticky;top:80px}
 /* ── MOBILE 768 ── */
 @media(max-width:768px){
   .log-layout{grid-template-columns:1fr}
@@ -285,29 +285,23 @@ button:active{opacity:.75}
     <div class="log-form-sticky">
       <button type="button" class="log-sheet-close" title="收合" onclick="closeLogForm()">✕</button>
       <div class="section-hdr" id="logFormHdr">新增體重記錄</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>選擇個體</label>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>選擇個體 <span id="currentWeightBadge" style="display:none;text-transform:none;letter-spacing:0;color:var(--accent2);font-weight:800">· 最新 <span id="cwValue">—</span></span></label>
         <select id="logIndividual" onchange="onLogIndividualChange()">
           <option value="">— 選擇個體 —</option>
         </select>
       </div>
-      <div id="currentWeightBadge" style="margin-bottom:10px;display:none">
-        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;color:var(--muted)">最新體重</span>
-          <span id="cwValue" style="font-size:20px;font-weight:800;color:var(--accent2)">—</span>
-        </div>
-      </div>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="form-grid" style="grid-template-columns:1.3fr 1fr;gap:8px;margin-bottom:8px">
         <div class="form-group">
           <label>記錄日期</label>
           <input type="date" id="logDate">
         </div>
         <div class="form-group">
           <label>體重（g）</label>
-          <input type="number" id="logWeight" step="0.1" min="0" max="200" placeholder="e.g. 46">
+          <input type="number" id="logWeight" step="0.1" min="0" max="200" placeholder="46">
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:8px">
         <label>進食狀況</label>
         <select id="logAppetite">
           <option value="excellent">優（主動爆食）</option>
@@ -316,7 +310,7 @@ button:active{opacity:.75}
           <option value="refused">拒食</option>
         </select>
       </div>
-      <div class="form-group" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:8px">
         <label>主食內容（點選複數）</label>
         <div class="chips" id="foodChips">
           <div class="chip selected" data-val="杜比亞">杜比亞</div>
@@ -326,7 +320,7 @@ button:active{opacity:.75}
           <div class="chip" data-val="Repashy">Repashy</div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:8px">
         <label>補充劑</label>
         <div class="chips" id="suppChips">
           <div class="chip selected" data-val="Calcium+D3">Calcium+D3</div>
@@ -335,9 +329,9 @@ button:active{opacity:.75}
           <div class="chip" data-val="Reptoboost">Reptoboost</div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:12px">
+      <div class="form-group" style="margin-bottom:10px">
         <label>備註</label>
-        <textarea id="logNotes" placeholder="蛻皮狀況、異常行為..."></textarea>
+        <textarea id="logNotes" placeholder="蛻皮狀況、異常行為..." style="min-height:40px"></textarea>
       </div>
       <button class="btn" style="width:100%" id="logSaveBtn" onclick="saveLog()">儲存記錄</button>
       <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;display:none" id="logCancelBtn" onclick="cancelEditLog()">取消編輯</button>
@@ -345,13 +339,26 @@ button:active{opacity:.75}
     <!-- Right: Log list -->
     <div>
       <div class="toolbar" style="margin-bottom:12px">
-        <select id="logFilterIndividual" onchange="renderLogs()" style="width:180px">
+        <select id="logFilterIndividual" onchange="renderLogs()" style="width:150px">
           <option value="">全部個體</option>
         </select>
         <select id="logFilterSpecies" onchange="renderLogs()">
           <option value="">全部物種</option>
           <option value="amyae">棘皮瘤尾守宮</option>
           <option value="turtle">星點澤龜</option>
+        </select>
+        <select id="logSort" onchange="renderLogs()" title="排序">
+          <option value="date_desc">日期新→舊</option>
+          <option value="date_asc">日期舊→新</option>
+          <option value="ind">依個體</option>
+          <option value="weight_desc">體重高→低</option>
+          <option value="weight_asc">體重低→高</option>
+        </select>
+        <select id="logLimit" onchange="renderLogs()" title="顯示筆數">
+          <option value="50">最近 50 筆</option>
+          <option value="20">最近 20 筆</option>
+          <option value="100">最近 100 筆</option>
+          <option value="0">全部</option>
         </select>
         <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="logCount"></span>
       </div>
@@ -1713,8 +1720,8 @@ function onLogIndividualChange(){
   const badge=document.getElementById('currentWeightBadge');
   if(!id){badge.style.display='none';return;}
   const w=latestWeight(id);
-  badge.style.display='block';
-  document.getElementById('cwValue').textContent=w?`${w} g`:'無記錄';
+  badge.style.display='inline';
+  document.getElementById('cwValue').textContent=w?`${w}g`:'無記錄';
 }
 function getSelectedChips(containerId){
   return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(c=>c.dataset.val);
@@ -1821,6 +1828,8 @@ function cancelEditLog(){
 function renderLogs(){
   const filterInd=document.getElementById('logFilterIndividual').value;
   const filterSp=document.getElementById('logFilterSpecies').value;
+  const sortBy=(document.getElementById('logSort')||{}).value||'date_desc';
+  const limit=parseInt((document.getElementById('logLimit')||{}).value||'0',10)||0;
   let logs=[...DATA.weightLogs].filter(l=>{
     if(filterInd && l.individualId!==filterInd) return false;
     if(filterSp){
@@ -1828,9 +1837,21 @@ function renderLogs(){
       if(!ind||ind.species!==filterSp) return false;
     }
     return true;
-  }).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('logCount').textContent=`${logs.length} 筆記錄`;
-  if(logs.length===0){
+  });
+  const total=logs.length;
+  const byDateDesc=(a,b)=>(b.date+'#'+b.id).localeCompare(a.date+'#'+a.id);
+  // 先依「日期新→舊」取最近 N 筆（limit=0 表示全部），再套用使用者選的顯示排序
+  if(limit>0 && total>limit){ logs=[...logs].sort(byDateDesc).slice(0,limit); }
+  const cmp={
+    date_desc:byDateDesc,
+    date_asc:(a,b)=>-byDateDesc(a,b),
+    ind:(a,b)=>a.individualId.localeCompare(b.individualId)||byDateDesc(a,b),
+    weight_desc:(a,b)=>(b.weight-a.weight)||byDateDesc(a,b),
+    weight_asc:(a,b)=>(a.weight-b.weight)||byDateDesc(a,b)
+  };
+  logs.sort(cmp[sortBy]||byDateDesc);
+  document.getElementById('logCount').textContent=(limit>0&&total>logs.length)?`顯示 ${logs.length} / 共 ${total} 筆`:`${total} 筆記錄`;
+  if(total===0){
     document.getElementById('logContent').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">尚無記錄</div>';
     return;
   }
