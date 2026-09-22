@@ -1146,7 +1146,7 @@ function showIndividual(id){
             <span class="log-date">${formatDate(l.date)}</span>
             <span class="log-weight-val">${l.weight}g</span>
             <span class="log-delta">${deltaHtml}</span>
-            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${(l.shedDate||l.shed)?'&nbsp;｜&nbsp;<span style="color:var(--accent2)">🦎蛻皮 '+formatDate(l.shedDate||l.date)+'</span>':''}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
+            <span style="flex:1;color:var(--muted);font-size:12px">${l.food.join('/')}&nbsp;｜&nbsp;${appetiteLabel[l.appetite]||l.appetite}${(l.shedDate||l.shed)?'&nbsp;｜&nbsp;<span style="color:var(--accent2)">蛻皮 '+formatDate(l.shedDate||l.date)+'</span>':''}${l.notes?'&nbsp;｜&nbsp;'+l.notes:''}</span>
           </div>`;
         }).join('')}
     </div>
@@ -1938,7 +1938,7 @@ function renderLogs(){
           const deltaHtml=delta===null?'<span style="color:var(--muted)">—</span>':delta>=0?`<span style="color:var(--green)">+${delta}g</span>`:`<span style="color:var(--red)">${delta}g</span>`;
           const apColor={excellent:'var(--green)',good:'var(--accent2)',poor:'var(--yellow)',refused:'var(--red)'};
           const shedD=l.shedDate||(l.shed?l.date:'');
-          const shedHtml=shedD?`<span style="color:var(--accent2);font-size:12px;font-weight:600;white-space:nowrap">🦎 ${formatDate(shedD)}</span>`:'<span style="color:var(--muted)">—</span>';
+          const shedHtml=shedD?`<span style="color:var(--accent2);font-size:12px;font-weight:600;white-space:nowrap">${formatDate(shedD)}</span>`:'<span style="color:var(--muted)">—</span>';
           return`<tr>
             <td style="color:var(--muted)">${formatDate(l.date)}</td>
             <td><strong style="color:var(--accent2)">${l.individualId}</strong></td>
