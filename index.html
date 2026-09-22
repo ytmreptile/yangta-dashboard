@@ -902,6 +902,20 @@ function isBreedReady(ind){
 }
 function readinessColor(w,sex,ageM){ return breedAssess(w,sex,ageM).color; }
 function readinessBadge(w,sex,ageM){ const a=breedAssess(w,sex,ageM); return{cls:a.cls,txt:a.txt}; }
+// 僅依體重評估（個體履歷「體重狀態」欄，不看月齡）
+function weightBadge(w,sex){
+  const c=breedCfg(sex);
+  if(!(w>=c.floor)) return{cls:'badge-red',txt:'未達標 ✗'};
+  if(!(w>=c.target)) return{cls:'badge-yellow',txt:'邊緣 ⚠️'};
+  return{cls:'badge-green',txt:'達標 ✅'};
+}
+// 僅依月齡評估（個體履歷「年齡狀態」欄，不看體重）
+function ageBadge(sex,ageM){
+  const c=breedCfg(sex);
+  if(ageM==null) return{cls:'badge-yellow',txt:'待查月齡 ⚠️'};
+  if(ageM<c.ageReq) return{cls:'badge-yellow',txt:'月齡不足 ⚠️'};
+  return{cls:'badge-green',txt:'達標 ✅'};
+}
 function etaMonths(currentW,targetW,monthlyGain=2.5){
   const diff=targetW-currentW;
   if(diff<=0) return null;
@@ -1037,11 +1051,12 @@ function renderTable(list){
   }
   el.innerHTML=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px">
     <table class="data-table">
-      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>月齡</th><th>就緒狀態</th><th>現況</th><th>出生日</th><th>文件號</th><th></th></tr></thead>
+      <thead><tr><th>個體編號</th><th>物種</th><th>世代</th><th>性別</th><th>體重</th><th>月齡</th><th>體重狀態</th><th>年齡狀態</th><th>現況</th><th>出生日</th><th>文件號</th><th></th></tr></thead>
       <tbody>${list.map(ind=>{
         const w=latestWeight(ind.id)||ind.weight;
         const ageM=ageMonths(ind);
-        const rb=readinessBadge(w,ind.sex,ageM);
+        const wb=weightBadge(w,ind.sex);
+        const ab=ageBadge(ind.sex,ageM);
         return`<tr>
           <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--accent2)">${ind.id}</strong></td>
           <td onclick="showIndividual('${ind.id}')">${speciesLabel[ind.species]}</td>
@@ -1049,7 +1064,8 @@ function renderTable(list){
           <td onclick="showIndividual('${ind.id}')">${ind.sex==='F'?'♀ 母':ind.sex==='M'?'♂ 公':'⚲ 未顯'}</td>
           <td onclick="showIndividual('${ind.id}')"><strong style="color:var(--text)">${w}g</strong></td>
           <td onclick="showIndividual('${ind.id}')" style="color:var(--muted)">${ageM==null?'—':ageM+' 個月'}</td>
-          <td onclick="showIndividual('${ind.id}')"><span class="badge ${rb.cls}">${rb.txt}</span></td>
+          <td onclick="showIndividual('${ind.id}')"><span class="badge ${wb.cls}">${wb.txt}</span></td>
+          <td onclick="showIndividual('${ind.id}')"><span class="badge ${ab.cls}">${ab.txt}</span></td>
           <td onclick="showIndividual('${ind.id}')"><span class="badge ${statusBadge[ind.status]}">${statusLabel[ind.status]}</span></td>
           <td onclick="showIndividual('${ind.id}')" style="color:var(--muted)">${ind.acquireDate||'—'}</td>
           <td onclick="showIndividual('${ind.id}')" style="color:var(--muted);font-size:12px">${ind.docNo||'—'}</td>
